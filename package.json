@@ -1,0 +1,26 @@
+{
+  "name": "reinvent",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node test.ts",
+    "dev": "tsx",
+    "build": "tsc --build --clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^22.13.4",
+    "caller": "^1.1.0",
+    "glob": "^11.0.1",
+    "microtime": "^3.1.1",
+    "minimist": "^1.2.8",
+    "ts-node": "^10.9.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.0.0"
+  }
+}
