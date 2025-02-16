@@ -3,7 +3,7 @@ import caller from 'caller';
 import microtime from 'microtime';
 
 class Hope {
-  private todo: [string, () => void][] = [];
+  private todo: [string, () => void, Array<string>][] = [];
   private passes: string[] = [];
   private fails: string[] = [];
   private errors: string[] = [];
@@ -14,25 +14,30 @@ class Hope {
     this.errors = [];
   }
 
-  test(comment: string, callback: () => void) {
-    this.todo.push([`${caller()}::${comment}`, callback]);
+  test(comment: string, callback: () => void, tags: Array<string> = []) {
+    this.todo.push([`${caller()}::${comment}`, callback, tags]);
   }
 
-  run() {
-    this.todo.forEach(([comment, test]) => {
-      try {
-        const now = microtime.now();
-        test();
-        const elapsedInMacro = microtime.now() - now;
-        this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
-      } catch (e) {
-        if (e instanceof assert.AssertionError) {
-          this.fails.push(comment);
-        } else {
-          this.errors.push(comment);
+  run(tag: string = '') {
+    this.todo
+      .filter(([comment, test, tags]) => {
+        if (tag.length === 0) { return true; }
+        return tags.indexOf(tag) > - 1;
+      })
+      .forEach(([comment, test, tags]) => {
+        try {
+          const now = microtime.now();
+          test();
+          const elapsedInMacro = microtime.now() - now;
+          this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+        } catch (e) {
+          if (e instanceof assert.AssertionError) {
+            this.fails.push(comment);
+          } else {
+            this.errors.push(comment);
+          }
         }
-      }
-    })
+      })
   }
 
   terse() {
@@ -73,6 +78,10 @@ export function assertThrows<T extends Error>(expectedType: new (...args: any[])
   } catch (error) {
     assert(error instanceof expectedType, `Expected function to throw ${expectedType.name} but it threw ${error instanceof Error ? error.constructor.name : typeof error}`);
   }
+}
+
+export function assertEqual<T>(actual: T, expected: T, message: string) {
+  assert(actual === expected, message);
 }
 
 export function assertApproxEqual(actual: number, expected: number, message: string, margin: number = 0.01) {

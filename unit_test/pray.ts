@@ -14,21 +14,27 @@ const parse = (args: string[]) => {
     output: parsed.output || 'verbose',
 
     // Array of test filenames if explicitly provided
-    filenames: parsed._ || []
+    filenames: parsed._ || [],
+
+    select: parsed.select || parsed.s,
+
+    tag: parsed.tag || parsed.t
   }
 }
 
 const main = async (args: Array<string>) => {
   const options = parse(args);
   if (options.filenames.length == 0) {
-    options.filenames = await glob(`${options.root}/**/test*.{ts,js}`);
+    const namePattern = options.select ?? 'test*';
+    options.filenames = await glob(`${options.root}/**/${namePattern}.{ts,js}`);
   }
 
   for (const f of options.filenames) {
     const absolutePath = fileURLToPath(new URL(f, import.meta.url));
     await import(absolutePath);
   }
-  hope.run()
+
+  hope.run(options.tag);
   const result = (options.output === 'terse') ? hope.terse() : hope.verbose();
   console.log(result);
 }
