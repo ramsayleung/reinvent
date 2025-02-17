@@ -2,7 +2,10 @@ import assert from "assert";
 import caller from 'caller';
 import microtime from 'microtime';
 
-type CallbackType = () => void;
+type SyncCallbackType = () => void;
+type AsyncCallbackType = () => Promise<void>;
+type CallbackType = SyncCallbackType | AsyncCallbackType;
+
 class Hope {
   private todo: [string, CallbackType, Array<string>][] = [];
   private passes: string[] = [];
@@ -29,34 +32,57 @@ class Hope {
     this.todo.push([`${caller()}::${comment}`, callback, tags]);
   }
 
-  run(tag: string = '') {
-    this.todo
+  private async runTest(comment: string, test: CallbackType, tags: string[]) {
+    try {
+      if (this.setupFn) {
+        if (this.isAsync(this.setupFn)) {
+          await this.setupFn();
+        } else {
+          this.setupFn();
+        }
+      }
+
+      const now = microtime.now();
+      if (this.isAsync(test)) {
+        await test();
+      } else {
+        test();
+      }
+
+      const elapsedInMacro = microtime.now() - now;
+      this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+
+      if (this.teardownFn) {
+        if (this.isAsync(this.teardownFn)) {
+          await this.teardownFn();
+        } else {
+          this.teardownFn();
+        }
+      }
+    } catch (e) {
+      if (e instanceof assert.AssertionError) {
+        this.fails.push(comment);
+      } else {
+        this.errors.push(comment);
+      }
+    }
+  }
+
+  async run(tag: string = '') {
+    const tests = this.todo
       .filter(([comment, test, tags]) => {
         if (tag.length === 0) { return true; }
         return tags.indexOf(tag) > - 1;
-      })
-      .forEach(([comment, test, tags]) => {
-        try {
-          if (this.setupFn) {
-            this.setupFn();
-          }
+      });
 
-          const now = microtime.now();
-          test();
-          const elapsedInMacro = microtime.now() - now;
-          this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
 
-          if (this.teardownFn) {
-            this.teardownFn();
-          }
-        } catch (e) {
-          if (e instanceof assert.AssertionError) {
-            this.fails.push(comment);
-          } else {
-            this.errors.push(comment);
-          }
-        }
-      })
+    for (const [comment, test, tags] of tests) {
+      await this.runTest(comment, test, tags);
+    }
+  }
+
+  private isAsync(fn: CallbackType): fn is AsyncCallbackType {
+    return fn.constructor.name === 'AsyncFunction';
   }
 
   terse() {

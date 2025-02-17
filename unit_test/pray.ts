@@ -34,7 +34,7 @@ const main = async (args: Array<string>) => {
     await import(absolutePath);
   }
 
-  hope.run(options.tag);
+  await hope.run(options.tag);
   const result = (options.output === 'terse') ? hope.terse() : hope.verbose();
   console.log(result);
 }
