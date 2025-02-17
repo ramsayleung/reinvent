@@ -48,8 +48,8 @@ class Hope {
         test();
       }
 
-      const elapsedInMacro = (process.hrtime.bigint() - now) / (BigInt(1000));
-      this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+      const elapsedInMicro = (process.hrtime.bigint() - now) / (BigInt(1000));
+      this.passes.push(comment + `, execution time: ${elapsedInMicro}us`);
 
       if (this.teardownFn) {
         if (this.isAsync(this.teardownFn)) {

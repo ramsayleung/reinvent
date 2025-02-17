@@ -40,7 +40,7 @@
 
    我们用以下的状态机来判断测试的结果:
   
-   #+begin_src plantuml :file ../img/unit_test_result_state.png :exports both
+   #+begin_src plantuml :file ../img/unit_test_result_state.png :exports results
      @startuml
 
      start
@@ -185,6 +185,7 @@
    2. 那么是否意味着，每个 =import= 语句都会运行一下 =new Hope()= 呢? 并不是，Node会缓存导入的 =module= ，也就是说无论一个 =module= 被导入多少次, 它也只会执行一次代码。
 
    只要导入 =hope.ts= 之后, 就可以使用 =hope.test()= 会注册单元测试用例，以便后续执行:
+
    [[file:~/code/javascript/reinvent/img/unit_test_hope_structure.svg]]
 
    最后， 我们只需要再实现下输出测试结果的功能，既支持输出一行的简短结果，又可以支持详尽的输出. 如果需要的话，后续还可以支持输出JSON, CSV, 或者HTML 格式的结果:
@@ -278,7 +279,7 @@
    我们默认会匹配所有以 =test= 为前缀的 ts 和 js 文件, 然后通过 =import= 导入, 因为 =hope= 是单例模式，所以所有的测试文件用的都是同一个实例, =hope.run= 就将注册的所有单元测试运行.
 
    整个框架的工作流程如下:
-   #+begin_src plantuml :file ../img/unit_test_workflow.png :exports both
+   #+begin_src plantuml :file ../img/unit_test_workflow.png :exports results
      @startuml
      pray.ts -> hope.ts: 1. import 
      hope.ts -> hope.ts: 2. 创建hope实例
@@ -305,15 +306,15 @@
     #+end_src
 ** 优化
 *** 增加运行时间
-    我们还可以记录每个测试用例的运行时间:
+    我们还可以记录每个测试用例的运行时间, 纳秒有点太小了，就精确到微秒即可:
     #+begin_src js
       run() {
         this.todo.forEach(([comment, test]) => {
           try {
             const now = process.hrtime.bigint();
             test();
-            const elapsedInMacro = (process.hrtime.bigint() - now) / (BigInt(1000));
-            this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+            const elapsedInMicro = (process.hrtime.bigint() - now) / (BigInt(1000));
+            this.passes.push(comment + `, execution time: ${elapsedInMicro}us`);
           } catch (e) {
             if (e instanceof assert.AssertionError) {
               this.fails.push(comment);
@@ -588,8 +589,8 @@
 
                 const now = microtime.now();
                 test();
-                const elapsedInMacro = microtime.now() - now;
-                this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+                const elapsedInMicro = microtime.now() - now;
+                this.passes.push(comment + `, execution time: ${elapsedInMicro}us`);
 
                 if (this.teardownFn) {
                   this.teardownFn();
@@ -673,8 +674,8 @@
                       test();
                   }
 
-                  const elapsedInMacro = (process.hrtime.bigint() - now) / (BigInt(1000));
-                  this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+                  const elapsedInMicro = (process.hrtime.bigint() - now) / (BigInt(1000));
+                  this.passes.push(comment + `, execution time: ${elapsedInMicro}us`);
 
                   if (this.teardownFn) {
                       if (this.isAsync(this.teardownFn)) {
