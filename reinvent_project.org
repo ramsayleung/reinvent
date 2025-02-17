@@ -31,6 +31,7 @@
   也希望其他人也可以从中受益。
 * 项目
   GitHub: https://github.com/ramsayleung/reinvent
+  
   原书是用 node + Javascript 编写的，部分代码因API变更而变得不可用，因此本项目也做了对应修改，并将 Javascript 替换成 Typescript, 通过类型系统来降低维护成本。
   1. [[file:unit_test/reinvent_unit_test.org][单元测试框架]]
 
