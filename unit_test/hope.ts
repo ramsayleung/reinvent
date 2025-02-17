@@ -111,4 +111,26 @@ export function assertRelativeApproxEqual(actual: number, expected: number, mess
   assert(Math.abs(actual - expected) / expected <= relativeError, message);
 }
 
+export function assertSetEqual<T>(actual: Set<T>, expected: Set<T>, message: string) {
+  assert(actual.size == expected.size, message);
+  for (const element of actual) {
+    assert(expected.has(element), message);
+  }
+}
+
+export function assertMapEqual<K extends string | number | symbol, V>(actual: Record<K, V>, expected: Record<K, V>, message: string) {
+  const actualKeys = Object.keys(actual) as K[];
+  const expectedKeys = Object.keys(expected) as K[];
+
+  assert(actualKeys.length === expectedKeys.length, message);
+  for (const actualKey of actualKeys) {
+    assert(expected[actualKey] && actual[actualKey] == expected[actualKey], message);
+  }
+}
+
+export function assertArraySame<T>(actual: Array<T>, expected: Array<T>, message: string) {
+  assert(actual.length === expected.length, message);
+  assertSetEqual(new Set(actual), new Set(expected), message);
+}
+
 export default new Hope()
