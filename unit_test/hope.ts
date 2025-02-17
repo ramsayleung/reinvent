@@ -1,6 +1,5 @@
 import assert from "assert";
 import caller from 'caller';
-import microtime from 'microtime';
 
 type SyncCallbackType = () => void;
 type AsyncCallbackType = () => Promise<void>;
@@ -42,14 +41,14 @@ class Hope {
         }
       }
 
-      const now = microtime.now();
+      const now = process.hrtime.bigint()
       if (this.isAsync(test)) {
         await test();
       } else {
         test();
       }
 
-      const elapsedInMacro = microtime.now() - now;
+      const elapsedInMacro = (process.hrtime.bigint() - now) / (BigInt(1000));
       this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
 
       if (this.teardownFn) {
@@ -113,6 +112,9 @@ class Hope {
   }
 }
 
+/**
+ * assert 抛出指定的异常
+ */ 
 export function assertThrows<T extends Error>(expectedType: new (...args: any[]) => T, func: () => void) {
   try {
 
@@ -125,6 +127,9 @@ export function assertThrows<T extends Error>(expectedType: new (...args: any[])
   }
 }
 
+/**
+ * assert 两个元素相等
+ */
 export function assertEqual<T>(actual: T, expected: T, message: string) {
   assert(actual === expected, message);
 }
@@ -137,6 +142,9 @@ export function assertRelativeApproxEqual(actual: number, expected: number, mess
   assert(Math.abs(actual - expected) / expected <= relativeError, message);
 }
 
+/**
+ * assert 两个 Set 相同
+ */
 export function assertSetEqual<T>(actual: Set<T>, expected: Set<T>, message: string) {
   assert(actual.size == expected.size, message);
   for (const element of actual) {
@@ -144,6 +152,9 @@ export function assertSetEqual<T>(actual: Set<T>, expected: Set<T>, message: str
   }
 }
 
+/**
+ * assert 两个 Map 相同
+ */
 export function assertMapEqual<K extends string | number | symbol, V>(actual: Record<K, V>, expected: Record<K, V>, message: string) {
   const actualKeys = Object.keys(actual) as K[];
   const expectedKeys = Object.keys(expected) as K[];
@@ -154,6 +165,9 @@ export function assertMapEqual<K extends string | number | symbol, V>(actual: Re
   }
 }
 
+/**
+ * assert两个列举的值相等，如元素相等，但是顺序不同也被视为相同
+ */
 export function assertArraySame<T>(actual: Array<T>, expected: Array<T>, message: string) {
   assert(actual.length === expected.length, message);
   assertSetEqual(new Set(actual), new Set(expected), message);
