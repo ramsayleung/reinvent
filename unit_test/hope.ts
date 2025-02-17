@@ -2,16 +2,27 @@ import assert from "assert";
 import caller from 'caller';
 import microtime from 'microtime';
 
+type CallbackType = () => void;
 class Hope {
-  private todo: [string, () => void, Array<string>][] = [];
+  private todo: [string, CallbackType, Array<string>][] = [];
   private passes: string[] = [];
   private fails: string[] = [];
   private errors: string[] = [];
+  private setupFn: CallbackType | null = null;
+  private teardownFn: CallbackType | null = null;
   constructor() {
     this.todo = [];
     this.passes = [];
     this.fails = [];
     this.errors = [];
+  }
+
+  setup(setupFn: CallbackType) {
+    this.setupFn = setupFn;
+  }
+
+  teardown(teardownFn: CallbackType) {
+    this.teardownFn = teardownFn;
   }
 
   test(comment: string, callback: () => void, tags: Array<string> = []) {
@@ -26,10 +37,18 @@ class Hope {
       })
       .forEach(([comment, test, tags]) => {
         try {
+          if (this.setupFn) {
+            this.setupFn();
+          }
+
           const now = microtime.now();
           test();
           const elapsedInMacro = microtime.now() - now;
           this.passes.push(comment + `, execution time: ${elapsedInMacro}us`);
+
+          if (this.teardownFn) {
+            this.teardownFn();
+          }
         } catch (e) {
           if (e instanceof assert.AssertionError) {
             this.fails.push(comment);
