@@ -1,7 +1,7 @@
 import { glob } from "glob";
 import path from "path";
 
-interface HashToPathMap {
+export interface HashToPathMap {
   [hash: string]: string;
 }
 
