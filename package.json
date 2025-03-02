@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node test.ts",
+    "test": "mocha --require ts-node/register test/test-*.ts",
     "dev": "tsx",
     "build": "tsc --build --clean"
   },
@@ -16,10 +16,15 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^22.13.4",
     "caller": "^1.1.0",
-    "glob": "^11.0.1",
     "minimist": "^1.2.8",
+    "mocha": "^11.1.0",
     "ts-node": "^10.9.0",
     "tsx": "^4.19.1",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "fs-extra-promise": "^1.0.1",
+    "glob": "^11.0.1"
   }
 }
