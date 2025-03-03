@@ -10,7 +10,7 @@
 #+HUGO_AUTO_SET_LASTMOD: t
 #+HUGO_DRAFT: false
 #+DATE: [2025-02-16 Sun 22:27]
-#+TITLE: 重新造轮子系列(一)：从0开发单元测试框架
+#+TITLE: 重新造轮子系列(一)：单元测试框架
 #+HUGO_TAGS: reinvent
 #+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
 * 前言
