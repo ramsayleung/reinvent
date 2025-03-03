@@ -14,7 +14,7 @@
 #+HUGO_TAGS: reinvent
 #+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
 * 前言
-  既然我们已经有[[file:~/code/javascript/reinvent/unit_test/reinvent_unit_test.org][单元测试]]框架来测试软件了，我们肯定不想已经写好的代码丢失掉。
+  既然我们已经有[[file:../unit_test/reinvent_unit_test.org][单元测试]]框架来测试软件了，我们肯定不想已经写好的代码丢失掉。
 
   对于重要的文件，一个必不可少的功能肯定是备份, 这样在丢失文件之后可以重新恢复。
 
@@ -122,7 +122,7 @@
 
    所以我们希望可以使用一个 mock object 来把文件系统 mock 掉，[[https://github.com/tschaub/mock-fs][=mock-fs=]] 这个库做的就是这样的事情, 它可以把程序中的文件操作都 mock 掉，实际操作的是内存对象而非文件系统.
 
-   [[file:~/code/javascript/reinvent/img/reivent_file_backup_mock_fs.jpg]]
+   [[file:../img/reivent_file_backup_mock_fs.jpg]]
 
    我们就可以在每个单元测试运行时，任意构造任何想要的文件目录，并且保证文件操作都是在操纵内存对象，
    而不会直接作用到文件系统，保证单元测试的相互隔离。
