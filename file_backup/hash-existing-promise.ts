@@ -41,7 +41,8 @@ export const hashExisting = (rootDir: string): Promise<PathHashPair[]> => {
       .then((pairs: PathStatPair[]) => Promise.all(
         pairs.map(([path, stat]) => readPath(path))))
       .then((pairs: PathContentPair[]) => Promise.all(
-        pairs.map(([path, content]) => hashPath(path, content))
+        pairs.filter(([path, content]) => content.length != 0)
+          .map(([path, content]) => hashPath(path, content))
       ))
       .then((pairs: PathHashPair[]) => resolve(pairs))
       .catch(err => reject(err))
