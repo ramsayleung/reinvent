@@ -14,11 +14,9 @@ export const findNew = async (rootDir: string, pathHashPairs: string[][]): Promi
   const pattern = `${rootDir}/*.bck`;
   const options = {};
   const existingFiles = await glob(pattern, options);
-  console.log(`existingFiles: ${existingFiles}`);
 
   existingFiles.forEach(filename => {
     const stripped = path.basename(filename).replace(/\.bck$/, '');
-    console.log(`stripped: ${stripped}`);
     delete hashToPath[stripped]
   });
 
