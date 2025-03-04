@@ -13,6 +13,7 @@
 #+TITLE: 重新造轮子系列(一)：单元测试框架
 #+HUGO_TAGS: reinvent
 #+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
+项目 GitHub 地址: [[https://github.com/ramsayleung/reinvent/tree/master/unit_test][Unit Test]]
 * 前言
   单元测试的重要性无须多言，它是保证项目质量的基石.
 
@@ -732,5 +733,7 @@
       }await hope.run(options.tag);
     #+end_src
 * 参考
+  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
+  
   - https://third-bit.com/sdxjs/unit-test/
   - https://blog.youxu.info/2008/11/30/pearl-in-smalltal/
