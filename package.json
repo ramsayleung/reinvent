@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "mocha --require ts-node/register test/test-*.ts",
+    "test": "jest",
     "dev": "tsx",
     "build": "tsc --build --clean"
   },
@@ -14,12 +14,14 @@
   "description": "",
   "devDependencies": {
     "@types/fs-extra-promise": "^1.0.13",
+    "@types/jest": "^29.5.14",
     "@types/minimist": "^1.2.5",
     "@types/mock-fs": "^4.13.4",
     "@types/node": "^22.13.4",
     "caller": "^1.1.0",
+    "jest": "^29.7.0",
     "minimist": "^1.2.8",
-    "mocha": "^11.1.0",
+    "ts-jest": "^29.2.6",
     "ts-node": "^10.9.0",
     "tsx": "^4.19.1",
     "typescript": "^5.0.0"

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe } from "node:test";
+import { glob } from 'glob';
 import mock from 'mock-fs';
 
 describe('checks for pre-existing hashes using mock filesystem', () => {
@@ -21,5 +21,10 @@ describe('checks for pre-existing hashes using mock filesystem', () => {
 
   afterEach(() => {
     mock.restore()
+  })
+
+  test('test with mock-fs', async () => {
+    const result = await glob("bck-0-csv-0");
+    expect(result.length).toBe(1);
   })
 })

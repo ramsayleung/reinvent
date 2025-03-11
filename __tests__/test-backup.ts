@@ -1,7 +1,6 @@
 import crypto from 'crypto'
 import fs from 'fs-extra-promise';
 import { HashToPathMap } from '../file_backup/check-existing-files';
-import { it, afterEach, beforeEach, describe } from 'node:test';
 import mock from 'mock-fs';
 import { backup } from '../file_backup/backup';
 import assert from 'assert';

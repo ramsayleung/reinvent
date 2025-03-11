@@ -1,7 +1,6 @@
 import assert from "assert";
 
 import { findNew } from "../file_backup/check-existing-files";
-import { describe, it } from "node:test";
 
 describe('pre-existing hashes and actual filesystem', () => {
   it('finds no pre-existing files when none given or eixst', async () => {

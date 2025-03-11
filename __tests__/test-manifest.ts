@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { it, afterEach, beforeEach, describe } from 'node:test';
 import mock from 'mock-fs';
 import { ManifestFileFormat, getLatestManifestFileSequence } from '../file_backup/manifest';
 
