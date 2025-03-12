@@ -1,6 +1,6 @@
 import assert from 'assert';
 import mock from 'mock-fs';
-import { hashExisting } from '../file_backup/hash-existing-promise';
+import { hashExisting } from '../../file_backup/hash-existing-promise';
 
 const Fixture = {
   backup: {

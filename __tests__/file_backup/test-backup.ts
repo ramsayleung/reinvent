@@ -1,8 +1,8 @@
 import crypto from 'crypto'
 import fs from 'fs-extra-promise';
-import { HashToPathMap } from '../file_backup/check-existing-files';
+import { HashToPathMap } from '../../file_backup/check-existing-files';
 import mock from 'mock-fs';
-import { backup } from '../file_backup/backup';
+import { backup } from '../../file_backup/backup';
 import assert from 'assert';
 import { glob } from 'glob';
 

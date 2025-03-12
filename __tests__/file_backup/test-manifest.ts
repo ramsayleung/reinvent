@@ -1,6 +1,6 @@
 import assert from 'assert';
 import mock from 'mock-fs';
-import { ManifestFileFormat, getLatestManifestFileSequence } from '../file_backup/manifest';
+import { ManifestFileFormat, getLatestManifestFileSequence } from '../../file_backup/manifest';
 
 const Fixture = {
   backup: {
