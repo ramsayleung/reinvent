@@ -13,7 +13,7 @@
 #+TITLE: 重新造轮子系列(二)：文件备份
 #+HUGO_TAGS: reinvent
 #+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
-项目 GitHub 地址: [[https://github.com/ramsayleung/reinvent/tree/master/file_backup][File Backup]]
+项目 GitHub 地址: [[https://github.com/ramsayleung/reinvent/tree/master/file_backup][File Backup]][fn:1]
 * 前言
   既然我们已经有[[file:../unit_test/reinvent_unit_test.org][单元测试]]框架来测试软件了，我们肯定不想已经写好的代码丢失掉。
 
@@ -235,3 +235,6 @@
   - https://en.wikipedia.org/wiki/Cryptographic_hash_function
   - https://michael.stapelberg.ch/posts/2022-06-18-rsync-overview/
   - https://javascript.info/async
+
+* Footnotes
+[fn:1] https://github.com/ramsayleung/reinvent/tree/master/file_backup 
