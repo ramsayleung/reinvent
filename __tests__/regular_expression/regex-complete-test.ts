@@ -3,6 +3,7 @@ import Any from '../../regular_expression/regex-any';
 import End from '../../regular_expression/regex-end';
 import Lit from '../../regular_expression/regex-lit';
 import Start from '../../regular_expression/regex-start';
+import Plus from '../../regular_expression/regex-plus';
 describe('Regex testsuite', () => {
   it.each([
     ['a', 'a', true, Lit('a')],
@@ -22,6 +23,10 @@ describe('Regex testsuite', () => {
     ['ab*c', 'abc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abbbc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abxc', false, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab+c', 'ac', false, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abbbc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abxc', false, Lit('a', Plus(Lit('b'), Lit('c')))],
     ['ab|cd', 'xaby', true, Alt(Lit('ab'), Lit('cd'))],
     ['ab|cd', 'acdc', true, Alt(Lit('ab'), Lit('cd'))],
     ['a(b|c)d', 'xabdy', true, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))],
