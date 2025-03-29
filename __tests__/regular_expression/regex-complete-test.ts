@@ -4,6 +4,7 @@ import End from '../../regular_expression/regex-end';
 import Lit from '../../regular_expression/regex-lit';
 import Start from '../../regular_expression/regex-start';
 import Plus from '../../regular_expression/regex-plus';
+import Opt from '../../regular_expression/regex-opt';
 describe('Regex testsuite', () => {
   it.each([
     ['a', 'a', true, Lit('a')],
@@ -20,6 +21,7 @@ describe('Regex testsuite', () => {
     ['a*', '', true, Any(Lit('a'))],
     ['a*', 'baac', true, Any(Lit('a'))],
     ['ab*c', 'ac', true, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'acc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abbbc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abxc', false, Lit('a', Any(Lit('b'), Lit('c')))],
@@ -30,7 +32,11 @@ describe('Regex testsuite', () => {
     ['ab|cd', 'xaby', true, Alt(Lit('ab'), Lit('cd'))],
     ['ab|cd', 'acdc', true, Alt(Lit('ab'), Lit('cd'))],
     ['a(b|c)d', 'xabdy', true, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))],
-    ['a(b|c)d', 'xabady', false, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))]
+    ['a(b|c)d', 'xabady', false, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))],
+    ['ab?c', 'abc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
   ])('Regex base test ("%s" "%s" "%p")', (_pattern, text, expected, matcher) => {
     const actual = matcher.match(text);
     expect(actual).toBe(expected);
