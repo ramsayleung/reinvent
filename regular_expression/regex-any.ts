@@ -1,5 +1,6 @@
 import { RegexBase } from "./regex-base";
 
+// Greedy implementation
 // Match zero or more character 
 class RegexAny extends RegexBase {
   private child: RegexBase;
@@ -11,29 +12,34 @@ class RegexAny extends RegexBase {
     this.rest = rest;
   }
 
-  _match(text: string, start: number): number | null {
-    const maxPossible = text.length - start;
-    for (let num = maxPossible; num >= 0; num -= 1) {
-      const afterMany = this._matchMany(text, start, num);
-      if (afterMany !== undefined) {
-        return afterMany;
+  _match(text: string, start: number): number | undefined {
+    const matchPositions = [start]; // start position is always
+    // included(even for zero match)
+    let currentPos = start;
+    while (true) {
+      const nextPos = this.child._match(text, currentPos);
+      if (nextPos === undefined || nextPos === currentPos) {
+        // failed to match or it doesn't advance the position
+        break;
       }
-    }
-    return undefined;
-  }
-
-  _matchMany(text: string, start: number, num: number) {
-    for (let i = 0; i < num; i += 1) {
-      start = this.child._match(text, start);
-      if (start === undefined) {
-        return undefined;
-      }
+      matchPositions.push(nextPos);
+      currentPos = nextPos;
     }
 
-    if (this.rest !== null) {
-      return this.rest._match(text, start);
+    // Try all possible ending positions for the repeating patern,
+    // from most to least
+    for (let i = matchPositions.length - 1; i >= 0; i--) {
+      const pos = matchPositions[i];
+
+      if (this.rest !== null) {
+        const result = this.rest._match(text, pos);
+        if (result !== undefined) {
+          return result;
+        }
+      } else {
+        return pos;
+      }
     }
-    return start;
   }
 }
 
