@@ -5,6 +5,7 @@ import Lit from '../../regular_expression/regex-lit';
 import Start from '../../regular_expression/regex-start';
 import Plus from '../../regular_expression/regex-plus';
 import Opt from '../../regular_expression/regex-opt';
+import AnyLazy from '../../regular_expression/regex-any-lazy';
 describe('Regex testsuite', () => {
   it.each([
     ['a', 'a', true, Lit('a')],
@@ -25,6 +26,12 @@ describe('Regex testsuite', () => {
     ['ab*c', 'abc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abbbc', true, Lit('a', Any(Lit('b'), Lit('c')))],
     ['ab*c', 'abxc', false, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'ac', true, Lit('a', AnyLazy(Lit('b'), Lit('c')))],
+    ['ab*c', 'acc', true, Lit('a', AnyLazy(Lit('b'), Lit('c')))],
+    ['ab*c', 'abc', true, Lit('a', AnyLazy(Lit('b'), Lit('c')))],
+    ['ab*c', 'abbbc', true, Lit('a', AnyLazy(Lit('b'), Lit('c')))],
+    ['ab*c', 'abxc', false, Lit('a', AnyLazy(Lit('b'), Lit('c')))],
+    ['ab*', 'ab', true, Lit('a', AnyLazy(Lit('b')))],
     ['ab+c', 'ac', false, Lit('a', Plus(Lit('b'), Lit('c')))],
     ['ab+c', 'abc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
     ['ab+c', 'abbbc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
