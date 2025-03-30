@@ -241,4 +241,80 @@ describe('Parses correctly', () => {
     expect(compile('()*')).toStrictEqual(Any(Group([])));
   });
 
+  it('parse quantifier on [abc]', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.CharClass,
+        location: 0,
+        end: 4,
+        children: [
+          {
+            kind: TokenKind.Lit,
+            value: 'a',
+            location: 1
+          },
+          {
+            kind: TokenKind.Lit,
+            value: 'b',
+            location: 2
+          },
+          {
+            kind: TokenKind.Lit,
+            value: 'c',
+            location: 3
+          },
+        ]
+      }
+    ];
+    expect(parse('[abc]')).toStrictEqual(expected);
+  })
+
+  it('parse quantifier on [abc]', () => {
+    expect(compile('[abc]')).toStrictEqual(CharClass([Lit('a'), Lit('b'), Lit('c')]));
+  });
+
+
+  it.each([
+    ['a', 'a', true, Lit('a')],
+    ['b', 'a', false, Lit('b')],
+    ['a', 'ab', true, Lit('a')],
+    ['b', 'ab', true, Lit('b')],
+    ['ab', 'ab', true, Lit('a', Lit('b'))],
+    ['ba', 'ab', false, Lit('b', Lit('a'))],
+    ['ab', 'ba', false, Lit('a', Lit('b'))],
+    ['^a', 'ab', true, Start(Lit('a'))],
+    ['^b', 'ab', false, Start(Lit('b'))],
+    ['a$', 'ab', false, Lit('a', End())],
+    ['a$', 'ba', true, Lit('a', End())],
+    ['a*', '', true, Any(Lit('a'))],
+    ['a*', 'baac', true, Any(Lit('a'))],
+    ['ab*c', 'ac', true, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'acc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'abc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'abbbc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab*c', 'abxc', false, Lit('a', Any(Lit('b'), Lit('c')))],
+    ['ab+c', 'ac', false, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abbbc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['ab+c', 'abxc', false, Lit('a', Plus(Lit('b'), Lit('c')))],
+    ['(ab)|(cd)', 'xaby', true, Alt(Group([Lit('a'), Lit('b')]), Group([Lit('c'), Lit('d')]))],
+    ['(ab)|(cd)', 'acdc', true, Alt(Group([Lit('a'), Lit('b')]), Group([Lit('c'), Lit('d')]))],
+    ['a(b|c)d', 'xabdy', true, Lit('a', Group([Alt(Lit('b'), Lit('c'))], Lit('d')))],
+    ['a(b|c)d', 'xabady', false, Lit('a', Group([Alt(Lit('b'), Lit('c'))], Lit('d')))],
+    ['ab?c', 'abc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ["[abcd]", 'a', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]", 'ab', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]", 'xhy', false, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]c", 'ac', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')], Lit('c'))],
+    ["c[abcd]", 'c', false, Lit('c', CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
+  ])('parse, compile and matcher test ("%s" "%s" "%p")', (pattern, text, expected, expectedMatcher) => {
+    const actualMatcher = compile(pattern);
+    expect(actualMatcher).toStrictEqual(expectedMatcher);
+    const actual = actualMatcher.match(text);
+    expect(actual).toBe(expected);
+  })
+
 })

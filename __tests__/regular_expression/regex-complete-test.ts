@@ -17,7 +17,7 @@ describe('Regex testsuite', () => {
     ['ba', 'ab', false, Lit('b', Lit('a'))],
     ['ab', 'ba', false, Lit('ab')],
     ['^a', 'ab', true, Start(Lit('a'))],
-    ['^b', 'ab', false, Lit('a', End())],
+    ['^b', 'ab', false, Start(Lit('b'))],
     ['a$', 'ab', false, Lit('a', End())],
     ['a$', 'ba', true, Lit('a', End())],
     ['a*', '', true, Any(Lit('a'))],

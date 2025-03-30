@@ -8,7 +8,10 @@ export enum TokenKind {
   Opt = 'Opt',
   Group = 'Group',
   GroupStart = 'GroupStart',
-  GroupEnd = 'GroupEnd'
+  GroupEnd = 'GroupEnd',
+  CharClass = 'CharClass',
+  CharClassStart = 'CharClassStart',
+  CharClassEnd = 'CharClassEnd'
 }
 
 export interface Token {
@@ -28,7 +31,9 @@ const SIMPLE = {
   '+': TokenKind.Plus,
   '?': TokenKind.Opt,
   '(': TokenKind.GroupStart,
-  ')': TokenKind.GroupEnd
+  ')': TokenKind.GroupEnd,
+  '[': TokenKind.CharClassStart,
+  ']': TokenKind.CharClassEnd
 }
 
 export const tokenize = (text: string) => {

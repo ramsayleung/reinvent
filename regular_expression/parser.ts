@@ -7,6 +7,7 @@ import Start from './regex-start';
 import Plus from './regex-plus';
 import Opt from './regex-opt';
 import Group from './regex-group';
+import CharClass from './regex-charclass';
 
 import { Token, TokenKind, tokenize } from "./tokenizer";
 import { RegexBase } from "./regex-base";
@@ -49,6 +50,8 @@ const createObjectByAST = (tokens: Token[]): RegexBase | null => {
     return Opt(createObjectByAST([token.child]), createObjectByAST(tokens));
   } else if (token.kind === TokenKind.Plus) {
     return Plus(createObjectByAST([token.child]), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.CharClass) {
+    return CharClass(token.children.map((childToken) => createObjectByAST([childToken])), createObjectByAST(tokens));
   } else {
     assert(false, `UNKNOWN token type ${token.kind}`);
   }
@@ -67,6 +70,10 @@ const handle = (result: Token[], token: Token, isLast: boolean) => {
     result.push(token);
   } else if (token.kind === TokenKind.GroupEnd) {
     result.push(groupEnd(result, token));
+  } else if (token.kind === TokenKind.CharClassStart) {
+    result.push(token);
+  } else if (token.kind === TokenKind.CharClassEnd) {
+    result.push(charClassEnd(result, token));
   } else if (token.kind === TokenKind.Any) {
     assert(result.length > 0, `No Operand for '*' (location ${token.location})`);
     token.child = result.pop();
@@ -110,6 +117,28 @@ const groupEnd = (result: Token[], token: Token): Token => {
   group.children = compress(group.children);
 
   return group;
+}
+
+const charClassEnd = (result: Token[], token: Token): Token => {
+  const charClass: Token = {
+    kind: TokenKind.CharClass,
+    location: null,
+    end: token.location,
+    children: []
+  }
+
+  while (true) {
+    assert(result.length > 0, `Unmatched end parenthesis (location ${token.location})`);
+    const child = result.pop();
+    if (child.kind === TokenKind.CharClassStart) {
+      charClass.location = child.location;
+      break;
+    }
+    charClass.children.unshift(child);
+  }
+  // Apply compress to handle Alt tokens within the charclass
+  charClass.children = compress(charClass.children);
+  return charClass;
 }
 
 // go through the output list to fill in the right side of Alts:
