@@ -6,6 +6,7 @@ import Start from '../../regular_expression/regex-start';
 import Plus from '../../regular_expression/regex-plus';
 import Opt from '../../regular_expression/regex-opt';
 import AnyLazy from '../../regular_expression/regex-any-lazy';
+import Set from '../../regular_expression/regex-set';
 describe('Regex testsuite', () => {
   it.each([
     ['a', 'a', true, Lit('a')],
@@ -44,6 +45,11 @@ describe('Regex testsuite', () => {
     ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
+    ["('abcd')", 'a', true, Set('abcd')],
+    ["('abcd')", 'ab', true, Set('abcd')],
+    ["('abcd')", 'xhy', false, Set('abcd')],
+    ["('abcd')c", 'ac', true, Set('abcd', Lit('c'))],
+    ["c('abcd')", 'c', false, Lit('c', Set('abcd'))],
   ])('Regex base test ("%s" "%s" "%p")', (_pattern, text, expected, matcher) => {
     const actual = matcher.match(text);
     expect(actual).toBe(expected);
