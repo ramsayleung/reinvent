@@ -1,6 +1,16 @@
 import assert from "assert";
+import Alt from './regex-alt';
+import Any from './regex-any';
+import End from './regex-end';
+import Lit from './regex-lit';
+import Start from './regex-start';
+import Plus from './regex-plus';
+import Opt from './regex-opt';
+import Group from './regex-group';
+
 import { Token, TokenKind, tokenize } from "./tokenizer";
-export const parse = (text: string) => {
+import { RegexBase } from "./regex-base";
+export const parse = (text: string): Token[] => {
   const result: Token[] = [];
   const allTokens = tokenize(text);
   for (let i = 0; i < allTokens.length; i += 1) {
@@ -9,6 +19,35 @@ export const parse = (text: string) => {
     handle(result, token, isLast);
   }
   return compress(result);
+}
+
+export const parseToObject = (text: string): RegexBase => {
+  const tokens: Token[] = parse(text);
+  return createObjectByAST(tokens);
+}
+
+// return instances of classes derived from RegexBase by abstract syntax tree
+const createObjectByAST = (tokens: Token[]): RegexBase | null => {
+  if (tokens.length === 0) {
+    return null;
+  }
+  const token = tokens.shift();
+  if (token.kind === TokenKind.Lit) {
+    return Lit(token.value, createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.Start) {
+    return Start(createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.End) {
+    assert(tokens.length === 0, `Should not have end token before other tokens`)
+    return End();
+  } else if (token.kind === TokenKind.Alt) {
+    return Alt(createObjectByAST([token.left]), createObjectByAST([token.right]), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.Group) {
+    return Group(token.children.map((childToken) => createObjectByAST([childToken])), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.Any) {
+    return Any(createObjectByAST([token.child]), createObjectByAST(tokens));
+  } else {
+    assert(false, `UNKNOWN token type ${token.kind}`);
+  }
 }
 
 const handle = (result: Token[], token: Token, isLast: boolean) => {
@@ -59,7 +98,7 @@ const groupEnd = (result: Token[], token: Token): Token => {
 }
 
 // go through the output list to fill in the right side of Alts:
-const compress = (raw: Token[]) => {
+const compress = (raw: Token[]): Token[] => {
   const cooked: Token[] = [];
   while (raw.length > 0) {
     const token = raw.pop();
