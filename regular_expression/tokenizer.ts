@@ -4,6 +4,8 @@ export enum TokenKind {
   Lit = 'Lit',
   Any = 'Any',
   Alt = 'Alt',
+  Plus = 'Plus',
+  Opt = 'Opt',
   Group = 'Group',
   GroupStart = 'GroupStart',
   GroupEnd = 'GroupEnd'
@@ -15,7 +17,7 @@ export interface Token {
   value?: string,               // for Alt
   left?: Token,                 // for Alt
   right?: Token,                // for Alt
-  child?: Token,                // for Any
+  child?: Token,                // for Any, Ops, Plus
   end?: number,                 // for Group
   children?: Token[]            // for Group
 }
@@ -23,6 +25,8 @@ export interface Token {
 const SIMPLE = {
   '*': TokenKind.Any,
   '|': TokenKind.Alt,
+  '+': TokenKind.Plus,
+  '?': TokenKind.Opt,
   '(': TokenKind.GroupStart,
   ')': TokenKind.GroupEnd
 }

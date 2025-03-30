@@ -45,6 +45,10 @@ const createObjectByAST = (tokens: Token[]): RegexBase | null => {
     return Group(token.children.map((childToken) => createObjectByAST([childToken])), createObjectByAST(tokens));
   } else if (token.kind === TokenKind.Any) {
     return Any(createObjectByAST([token.child]), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.Opt) {
+    return Opt(createObjectByAST([token.child]), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.Plus) {
+    return Plus(createObjectByAST([token.child]), createObjectByAST(tokens));
   } else {
     assert(false, `UNKNOWN token type ${token.kind}`);
   }
@@ -65,6 +69,14 @@ const handle = (result: Token[], token: Token, isLast: boolean) => {
     result.push(groupEnd(result, token));
   } else if (token.kind === TokenKind.Any) {
     assert(result.length > 0, `No Operand for '*' (location ${token.location})`);
+    token.child = result.pop();
+    result.push(token)
+  } else if (token.kind === TokenKind.Plus) {
+    assert(result.length > 0, `No Operand for '+' (location ${token.location})`);
+    token.child = result.pop();
+    result.push(token)
+  } else if (token.kind === TokenKind.Opt) {
+    assert(result.length > 0, `No Operand for '?' (location ${token.location})`);
     token.child = result.pop();
     result.push(token)
   } else if (token.kind === TokenKind.Alt) {
@@ -94,6 +106,9 @@ const groupEnd = (result: Token[], token: Token): Token => {
     }
     group.children.unshift(child);
   }
+  // Apply compress to handle Alt tokens within the group
+  group.children = compress(group.children);
+
   return group;
 }
 

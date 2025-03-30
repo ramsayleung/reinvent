@@ -64,4 +64,179 @@ describe('Parses correctly', () => {
     const expected: RegexBase = Alt(Lit('a'), Group([Lit('b'), Lit('c')]));
     expect(parseToObject('a|(bc)')).toStrictEqual(expected);
   })
+  it('parses Any (*) quantifier', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Any,
+        location: 1,
+        child: { kind: TokenKind.Lit, location: 0, value: 'a' }
+      }
+    ];
+    expect(parse('a*')).toStrictEqual(expected);
+  });
+
+  it('parses Any `*` quantifier to object', () => {
+    expect(parseToObject('a*')).toStrictEqual(Any(Lit('a')));
+  });
+
+  it('parses Opt `?` quantifier', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Opt,
+        location: 1,
+        child: { kind: TokenKind.Lit, location: 0, value: 'a' }
+      }
+    ];
+    expect(parse('a?')).toStrictEqual(expected);
+  });
+
+  it('parses Opt `?` quantifier to object', () => {
+    expect(parseToObject('a?')).toStrictEqual(Opt(Lit('a')));
+  });
+
+  it('parses Plus `+` quantifier', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Plus,
+        location: 1,
+        child: { kind: TokenKind.Lit, location: 0, value: 'a' }
+      }
+    ];
+    expect(parse('a+')).toStrictEqual(expected);
+  });
+
+  it('parses Plus `+` quantifier to object', () => {
+    expect(parseToObject('a+')).toStrictEqual(Plus(Lit('a')));
+  });
+
+  it('parses nested quantifiers `a*?`', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Opt,
+        location: 2,
+        child: {
+          kind: TokenKind.Any,
+          location: 1,
+          child: { kind: TokenKind.Lit, location: 0, value: 'a' }
+        }
+      }
+    ];
+    expect(parse('a*?')).toStrictEqual(expected);
+  });
+
+  it('parses nested quantifiers to object `a*?`', () => {
+    expect(parseToObject('a*?')).toStrictEqual(Opt(Any(Lit('a'))));
+  });
+
+  it('parses quantifiers with groups `(ab)+`', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Plus,
+        location: 4,
+        child: {
+          kind: TokenKind.Group,
+          location: 0,
+          end: 3,
+          children: [
+            { kind: TokenKind.Lit, location: 1, value: 'a' },
+            { kind: TokenKind.Lit, location: 2, value: 'b' }
+          ]
+        }
+      }
+    ];
+    expect(parse('(ab)+')).toStrictEqual(expected);
+  });
+
+  it('parses quantifiers with groups to object `(ab)+`', () => {
+    expect(parseToObject('(ab)+')).toStrictEqual(
+      Plus(Group([Lit('a'), Lit('b')]))
+    );
+  });
+
+  it('parses Alt `|` with quantifiers `a|b*`', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Alt,
+        location: 1,
+        left: { kind: TokenKind.Lit, location: 0, value: 'a' },
+        right: {
+          kind: TokenKind.Any,
+          location: 3,
+          child: { kind: TokenKind.Lit, location: 2, value: 'b' }
+        }
+      }
+    ];
+    expect(parse('a|b*')).toStrictEqual(expected);
+  });
+
+  it('parses Alt `|` with quantifiers to object `a|b*`', () => {
+    expect(parseToObject('a|b*')).toStrictEqual(
+      Alt(Lit('a'), Any(Lit('b')))
+    );
+  });
+
+  it('parses complex combination `a(b|c)?d+`', () => {
+    const expected: Token[] = [
+      { kind: TokenKind.Lit, location: 0, value: 'a' },
+      {
+        kind: TokenKind.Opt,
+        location: 6,
+        child: {
+          kind: TokenKind.Group,
+          location: 1,
+          end: 5,
+          children: [
+            {
+              kind: TokenKind.Alt,
+              location: 3,
+              left: { kind: TokenKind.Lit, location: 2, value: 'b' },
+              right: { kind: TokenKind.Lit, location: 4, value: 'c' }
+            }
+          ]
+        }
+      },
+      {
+        kind: TokenKind.Plus,
+        location: 8,
+        child: { kind: TokenKind.Lit, location: 7, value: 'd' }
+      }
+    ];
+    const actual = parse('a(b|c)?d+');
+    expect(actual).toStrictEqual(expected);
+  });
+
+  it('parses empty group ()', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Group,
+        location: 0,
+        end: 1,
+        children: []
+      }
+    ];
+    expect(parse('()')).toStrictEqual(expected);
+  });
+
+  it('parses empty group to object ()', () => {
+    expect(parseToObject('()')).toStrictEqual(Group([]));
+  });
+  it('parses quantifier on empty group ()*', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Any,
+        location: 2,
+        child: {
+          kind: TokenKind.Group,
+          location: 0,
+          end: 1,
+          children: []
+        }
+      }
+    ];
+    expect(parse('()*')).toStrictEqual(expected);
+  });
+
+  it('parses quantifier on empty group to object ()*', () => {
+    expect(parseToObject('()*')).toStrictEqual(Any(Group([])));
+  });
 })
