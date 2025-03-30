@@ -1,10 +1,11 @@
-import { parseToObject, parse } from "../../regular_expression/parser";
+import { compile, parse } from "../../regular_expression/parser";
 import { Token, TokenKind } from "../../regular_expression/tokenizer";
 import Alt from '../../regular_expression/regex-alt';
 import Any from '../../regular_expression/regex-any';
 import End from '../../regular_expression/regex-end';
 import Lit from '../../regular_expression/regex-lit';
 import Start from '../../regular_expression/regex-start';
+import CharClass from '../../regular_expression/regex-charclass';
 import Plus from '../../regular_expression/regex-plus';
 import Opt from '../../regular_expression/regex-opt';
 import AnyLazy from '../../regular_expression/regex-any-lazy';
@@ -52,17 +53,17 @@ describe('Parses correctly', () => {
   })
 
   it('parse a single literal to object', () => {
-    expect(parseToObject('a')).toStrictEqual(Lit('a'));
+    expect(compile('a')).toStrictEqual(Lit('a'));
   })
 
   it('parses multiple literals to object', () => {
     const expected: RegexBase = Lit('a', Lit('b'));
-    expect(parseToObject('ab')).toStrictEqual(expected);
+    expect(compile('ab')).toStrictEqual(expected);
   })
 
   it('parses alt of groups to object', () => {
     const expected: RegexBase = Alt(Lit('a'), Group([Lit('b'), Lit('c')]));
-    expect(parseToObject('a|(bc)')).toStrictEqual(expected);
+    expect(compile('a|(bc)')).toStrictEqual(expected);
   })
   it('parses Any (*) quantifier', () => {
     const expected: Token[] = [
@@ -76,7 +77,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses Any `*` quantifier to object', () => {
-    expect(parseToObject('a*')).toStrictEqual(Any(Lit('a')));
+    expect(compile('a*')).toStrictEqual(Any(Lit('a')));
   });
 
   it('parses Opt `?` quantifier', () => {
@@ -91,7 +92,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses Opt `?` quantifier to object', () => {
-    expect(parseToObject('a?')).toStrictEqual(Opt(Lit('a')));
+    expect(compile('a?')).toStrictEqual(Opt(Lit('a')));
   });
 
   it('parses Plus `+` quantifier', () => {
@@ -106,7 +107,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses Plus `+` quantifier to object', () => {
-    expect(parseToObject('a+')).toStrictEqual(Plus(Lit('a')));
+    expect(compile('a+')).toStrictEqual(Plus(Lit('a')));
   });
 
   it('parses nested quantifiers `a*?`', () => {
@@ -125,7 +126,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses nested quantifiers to object `a*?`', () => {
-    expect(parseToObject('a*?')).toStrictEqual(Opt(Any(Lit('a'))));
+    expect(compile('a*?')).toStrictEqual(Opt(Any(Lit('a'))));
   });
 
   it('parses quantifiers with groups `(ab)+`', () => {
@@ -148,7 +149,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses quantifiers with groups to object `(ab)+`', () => {
-    expect(parseToObject('(ab)+')).toStrictEqual(
+    expect(compile('(ab)+')).toStrictEqual(
       Plus(Group([Lit('a'), Lit('b')]))
     );
   });
@@ -170,7 +171,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses Alt `|` with quantifiers to object `a|b*`', () => {
-    expect(parseToObject('a|b*')).toStrictEqual(
+    expect(compile('a|b*')).toStrictEqual(
       Alt(Lit('a'), Any(Lit('b')))
     );
   });
@@ -218,7 +219,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses empty group to object ()', () => {
-    expect(parseToObject('()')).toStrictEqual(Group([]));
+    expect(compile('()')).toStrictEqual(Group([]));
   });
   it('parses quantifier on empty group ()*', () => {
     const expected: Token[] = [
@@ -237,6 +238,7 @@ describe('Parses correctly', () => {
   });
 
   it('parses quantifier on empty group to object ()*', () => {
-    expect(parseToObject('()*')).toStrictEqual(Any(Group([])));
+    expect(compile('()*')).toStrictEqual(Any(Group([])));
   });
+
 })

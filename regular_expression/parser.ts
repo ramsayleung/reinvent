@@ -21,7 +21,7 @@ export const parse = (text: string): Token[] => {
   return compress(result);
 }
 
-export const parseToObject = (text: string): RegexBase => {
+export const compile = (text: string): RegexBase => {
   const tokens: Token[] = parse(text);
   return createObjectByAST(tokens);
 }
