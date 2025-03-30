@@ -45,11 +45,11 @@ describe('Regex testsuite', () => {
     ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
-    ["('abcd')", 'a', true, Group('abcd')],
-    ["('abcd')", 'ab', true, Group('abcd')],
-    ["('abcd')", 'xhy', false, Group('abcd')],
-    ["('abcd')c", 'ac', true, Group('abcd', Lit('c'))],
-    ["c('abcd')", 'c', false, Lit('c', Group('abcd'))],
+    ["('abcd')", 'a', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["('abcd')", 'ab', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["('abcd')", 'xhy', false, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["('abcd')c", 'ac', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')], Lit('c'))],
+    ["c('abcd')", 'c', false, Lit('c', Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
   ])('Regex base test ("%s" "%s" "%p")', (_pattern, text, expected, matcher) => {
     const actual = matcher.match(text);
     expect(actual).toBe(expected);

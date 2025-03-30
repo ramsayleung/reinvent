@@ -2,27 +2,28 @@ import { RegexBase } from "./regex-base";
 
 // Matches any character from a set
 class RegexGroup extends RegexBase {
-  private chars: string;
+  private children: RegexBase[];
   private rest: RegexBase;
 
-  constructor(chars: string, rest: RegexBase | null) {
+  constructor(children: RegexBase[], rest: RegexBase | null) {
     super();
-    this.chars = chars;
+    this.children = children;
     this.rest = rest;
   }
 
   _match(text: string, start: number): number | undefined {
-    let nextIndex = undefined;
-    if (this.chars.indexOf(text[start]) > -1) {
-      nextIndex = start + 1;
-    }
+    for (const pattern of this.children) {
+      const afterPattern = pattern._match(text, start);
+      if (afterPattern !== undefined) {
+        if (this.rest !== null) {
+          return this.rest._match(text, afterPattern);
+        }
 
-    if (this.rest === null) {
-      return nextIndex;
+        return afterPattern;
+      }
     }
-
-    return this.rest._match(text, nextIndex);
+    return undefined;
   }
 }
 
-export default (chars: string, rest: RegexBase = null) => new RegexGroup(chars, rest);
+export default (children: RegexBase[], rest: RegexBase = null) => new RegexGroup(children, rest);
