@@ -1,6 +1,6 @@
 import { RegexBase } from "./regex-base";
 
-// Matches any character from a set
+// Matches the exact sequence "xyz" (e.g., "a(bc)d" only matches "abcd").
 class RegexGroup extends RegexBase {
   private children: RegexBase[];
   private rest: RegexBase;
@@ -12,17 +12,19 @@ class RegexGroup extends RegexBase {
   }
 
   _match(text: string, start: number): number | undefined {
+    let afterPattern = start;
     for (const pattern of this.children) {
-      const afterPattern = pattern._match(text, start);
-      if (afterPattern !== undefined) {
-        if (this.rest !== null) {
-          return this.rest._match(text, afterPattern);
-        }
-
-        return afterPattern;
+      afterPattern = pattern._match(text, afterPattern);
+      if (afterPattern === undefined) {
+        return undefined;
       }
     }
-    return undefined;
+
+    if (this.rest !== null) {
+      return this.rest._match(text, afterPattern);
+    }
+
+    return afterPattern;
   }
 }
 

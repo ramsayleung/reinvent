@@ -6,7 +6,7 @@ import Start from '../../regular_expression/regex-start';
 import Plus from '../../regular_expression/regex-plus';
 import Opt from '../../regular_expression/regex-opt';
 import AnyLazy from '../../regular_expression/regex-any-lazy';
-import Group from '../../regular_expression/regex-group';
+import CharClass from '../../regular_expression/regex-charclass';
 describe('Regex testsuite', () => {
   it.each([
     ['a', 'a', true, Lit('a')],
@@ -45,11 +45,11 @@ describe('Regex testsuite', () => {
     ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
     ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
-    ["('abcd')", 'a', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
-    ["('abcd')", 'ab', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
-    ["('abcd')", 'xhy', false, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
-    ["('abcd')c", 'ac', true, Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')], Lit('c'))],
-    ["c('abcd')", 'c', false, Lit('c', Group([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
+    ["[abcd]", 'a', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]", 'ab', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]", 'xhy', false, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+    ["[abcd]c", 'ac', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')], Lit('c'))],
+    ["c[abcd]", 'c', false, Lit('c', CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
   ])('Regex base test ("%s" "%s" "%p")', (_pattern, text, expected, matcher) => {
     const actual = matcher.match(text);
     expect(actual).toBe(expected);
