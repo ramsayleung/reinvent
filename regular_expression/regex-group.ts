@@ -1,7 +1,7 @@
 import { RegexBase } from "./regex-base";
 
 // Matches any character from a set
-class RegexSet extends RegexBase {
+class RegexGroup extends RegexBase {
   private chars: string;
   private rest: RegexBase;
 
@@ -25,4 +25,4 @@ class RegexSet extends RegexBase {
   }
 }
 
-export default (chars: string, rest: RegexBase = null) => new RegexSet(chars, rest);
+export default (chars: string, rest: RegexBase = null) => new RegexGroup(chars, rest);
