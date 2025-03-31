@@ -11,7 +11,8 @@ export enum TokenKind {
   GroupEnd = 'GroupEnd',
   CharClass = 'CharClass',
   CharClassStart = 'CharClassStart',
-  CharClassEnd = 'CharClassEnd'
+  CharClassEnd = 'CharClassEnd',
+  LazyAny = 'LazyAny'
 }
 
 export interface Token {
@@ -36,7 +37,7 @@ const SIMPLE = {
   ']': TokenKind.CharClassEnd
 }
 
-export const tokenize = (text: string) => {
+export const tokenize = (text: string): Token[] => {
   const result: Token[] = [];
   for (let i = 0; i < text.length; i += 1) {
     const c = text[i]
@@ -50,5 +51,22 @@ export const tokenize = (text: string) => {
       result.push({ kind: TokenKind.Lit, location: i, value: c });
     }
   }
-  return result;
+  return interpretLazyAny(result);
+}
+
+// interpret `*?` as a single token meaning "lazy match zero or more"
+const interpretLazyAny = (raw: Token[]): Token[] => {
+  const cooked: Token[] = [];
+  while (raw.length > 0) {
+    let token = raw.pop();
+    if (token.kind === TokenKind.Any && cooked.length > 0 && cooked[0].kind === TokenKind.Opt) {
+      const optToken = cooked.shift();
+      const lazyAnyToken = token;
+      lazyAnyToken.kind = TokenKind.LazyAny;
+      lazyAnyToken.end = optToken.location;
+      token = lazyAnyToken;
+    }
+    cooked.unshift(token);
+  }
+  return cooked;
 }

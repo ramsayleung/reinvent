@@ -58,4 +58,26 @@ describe('Tokenize correctly', () => {
 
     expect(tokenize('^a*(bcd|e^)*f$gh$')).toStrictEqual(expectedToken);
   })
+
+  it('Tokenizes lazy any expression', () => {
+    const expectedToken: Token[] = [{
+      kind: TokenKind.Lit, value: 'a', location: 0,
+    },
+
+    {
+      kind: TokenKind.Lit,
+      value: 'b',
+      location: 1
+    },
+    {
+      kind: TokenKind.LazyAny, location: 2, end: 3
+    }, {
+      kind: TokenKind.Lit,
+      value: 'c',
+      location: 4
+    }
+    ];
+    const actual = tokenize('ab*?c');
+    expect(actual).toStrictEqual(expectedToken);
+  })
 })

@@ -8,6 +8,7 @@ import Plus from './regex-plus';
 import Opt from './regex-opt';
 import Group from './regex-group';
 import CharClass from './regex-charclass';
+import LazyAny from './regex-lazy-any';
 
 import { Token, TokenKind, tokenize } from "./tokenizer";
 import { RegexBase } from "./regex-base";
@@ -46,6 +47,8 @@ const createObjectByAST = (tokens: Token[]): RegexBase | null => {
     return Group(token.children.map((childToken) => createObjectByAST([childToken])), createObjectByAST(tokens));
   } else if (token.kind === TokenKind.Any) {
     return Any(createObjectByAST([token.child]), createObjectByAST(tokens));
+  } else if (token.kind === TokenKind.LazyAny) {
+    return LazyAny(createObjectByAST([token.child]), createObjectByAST(tokens));
   } else if (token.kind === TokenKind.Opt) {
     return Opt(createObjectByAST([token.child]), createObjectByAST(tokens));
   } else if (token.kind === TokenKind.Plus) {
@@ -76,6 +79,10 @@ const handle = (result: Token[], token: Token, isLast: boolean) => {
     result.push(charClassEnd(result, token));
   } else if (token.kind === TokenKind.Any) {
     assert(result.length > 0, `No Operand for '*' (location ${token.location})`);
+    token.child = result.pop();
+    result.push(token)
+  } else if (token.kind === TokenKind.LazyAny) {
+    assert(result.length > 0, `No Operand for '*?' (location ${token.location})`);
     token.child = result.pop();
     result.push(token)
   } else if (token.kind === TokenKind.Plus) {

@@ -8,7 +8,7 @@ import Start from '../../regular_expression/regex-start';
 import CharClass from '../../regular_expression/regex-charclass';
 import Plus from '../../regular_expression/regex-plus';
 import Opt from '../../regular_expression/regex-opt';
-import AnyLazy from '../../regular_expression/regex-any-lazy';
+import LazyAny from '../../regular_expression/regex-lazy-any';
 import Group from '../../regular_expression/regex-group';
 import { RegexBase } from "../../regular_expression/regex-base";
 
@@ -113,20 +113,18 @@ describe('Parses correctly', () => {
   it('parses nested quantifiers `a*?`', () => {
     const expected: Token[] = [
       {
-        kind: TokenKind.Opt,
-        location: 2,
-        child: {
-          kind: TokenKind.Any,
-          location: 1,
-          child: { kind: TokenKind.Lit, location: 0, value: 'a' }
-        }
+        kind: TokenKind.LazyAny,
+        location: 1,
+        end: 2,
+        child:
+          { kind: TokenKind.Lit, location: 0, value: 'a' }
       }
     ];
     expect(parse('a*?')).toStrictEqual(expected);
   });
 
   it('parses nested quantifiers to object `a*?`', () => {
-    expect(compile('a*?')).toStrictEqual(Opt(Any(Lit('a'))));
+    expect(compile('a*?')).toStrictEqual(LazyAny(Lit('a')));
   });
 
   it('parses quantifiers with groups `(ab)+`', () => {
