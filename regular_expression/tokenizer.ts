@@ -12,7 +12,8 @@ export enum TokenKind {
   CharClass = 'CharClass',
   CharClassStart = 'CharClassStart',
   CharClassEnd = 'CharClassEnd',
-  LazyAny = 'LazyAny'
+  LazyAny = 'LazyAny',
+  Escape = 'Escape'
 }
 
 export interface Token {
@@ -34,8 +35,13 @@ const SIMPLE = {
   '(': TokenKind.GroupStart,
   ')': TokenKind.GroupEnd,
   '[': TokenKind.CharClassStart,
-  ']': TokenKind.CharClassEnd
+  ']': TokenKind.CharClassEnd,
+  '\\': TokenKind.Escape
 }
+
+const TOKEN_TYPE_SYMBOL_MAP = Object.fromEntries(
+  Object.entries(SIMPLE).map(([key, value]) => [value, key])
+);
 
 export const tokenize = (text: string): Token[] => {
   const result: Token[] = [];
@@ -51,21 +57,31 @@ export const tokenize = (text: string): Token[] => {
       result.push({ kind: TokenKind.Lit, location: i, value: c });
     }
   }
-  return interpretLazyAny(result);
+  return compress(result);
 }
 
-// interpret `*?` as a single token meaning "lazy match zero or more"
-const interpretLazyAny = (raw: Token[]): Token[] => {
+const compress = (raw: Token[]): Token[] => {
   const cooked: Token[] = [];
   while (raw.length > 0) {
     let token = raw.pop();
+    // interpret `*?` as a single token meaning "lazy match zero or more"
     if (token.kind === TokenKind.Any && cooked.length > 0 && cooked[0].kind === TokenKind.Opt) {
       const optToken = cooked.shift();
       const lazyAnyToken = token;
       lazyAnyToken.kind = TokenKind.LazyAny;
       lazyAnyToken.end = optToken.location;
       token = lazyAnyToken;
+    } else if (token.kind === TokenKind.Escape && cooked.length > 0) {
+      const literalizedToken = cooked.shift();
+      if (literalizedToken.kind in TOKEN_TYPE_SYMBOL_MAP) {
+        token = {
+          kind: TokenKind.Lit,
+          value: TOKEN_TYPE_SYMBOL_MAP[literalizedToken.kind],
+          location: literalizedToken.location
+        }
+      }
     }
+
     cooked.unshift(token);
   }
   return cooked;

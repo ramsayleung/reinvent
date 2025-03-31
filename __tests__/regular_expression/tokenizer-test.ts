@@ -80,4 +80,31 @@ describe('Tokenize correctly', () => {
     const actual = tokenize('ab*?c');
     expect(actual).toStrictEqual(expectedToken);
   })
+
+  it('Tokenize escape character', () => {
+    const expected: Token[] = [
+      {
+        kind: TokenKind.Lit,
+        value: 'a',
+        location: 0
+      },
+      {
+        kind: TokenKind.Lit,
+        location: 2,
+        value: '*'
+      },
+      {
+        kind: TokenKind.Lit,
+        value: 'b',
+        location: 3
+      },
+      {
+        kind: TokenKind.Lit,
+        value: 'c',
+        location: 4
+      },
+    ];
+    const actual = tokenize('a\\*bc');
+    expect(actual).toStrictEqual(expected);
+  })
 })
