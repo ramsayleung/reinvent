@@ -27,7 +27,7 @@ export interface Token {
   children?: Token[]            // for Group
 }
 
-const SIMPLE = {
+const SYMBOL_TOKEN_TYPE_MAP = {
   '*': TokenKind.Any,
   '|': TokenKind.Alt,
   '+': TokenKind.Plus,
@@ -40,15 +40,15 @@ const SIMPLE = {
 }
 
 const TOKEN_TYPE_SYMBOL_MAP = Object.fromEntries(
-  Object.entries(SIMPLE).map(([key, value]) => [value, key])
+  Object.entries(SYMBOL_TOKEN_TYPE_MAP).map(([key, value]) => [value, key])
 );
 
 export const tokenize = (text: string): Token[] => {
   const result: Token[] = [];
   for (let i = 0; i < text.length; i += 1) {
     const c = text[i]
-    if (c in SIMPLE) {
-      result.push({ kind: SIMPLE[c], location: i });
+    if (c in SYMBOL_TOKEN_TYPE_MAP) {
+      result.push({ kind: SYMBOL_TOKEN_TYPE_MAP[c], location: i });
     } else if ((c === '^') && (i === 0)) {
       result.push({ kind: TokenKind.Start, location: i });
     } else if ((c === '$') && (i === (text.length - 1))) {
