@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexAlt extends RegexBase {
   private rest: RegexBase;
@@ -12,21 +12,22 @@ class RegexAlt extends RegexBase {
     this.right = right;
   }
 
-  _match(text: string, start: number): number | undefined {
+  _match(text: string, start: number): number {
     for (const pattern of [this.left, this.right]) {
       const afterPattern = pattern._match(text, start);
-      if (afterPattern !== undefined) {
+      if (afterPattern !== INVALID_INDEX) {
         if (this.rest === null) {
           return afterPattern;
         }
 
         const afterRest = this.rest._match(text, afterPattern);
-        if (afterRest !== undefined) {
+        if (afterRest !== INVALID_INDEX) {
           return afterRest;
         }
       }
     }
-    return undefined;
+
+    return INVALID_INDEX;
   }
 }
 

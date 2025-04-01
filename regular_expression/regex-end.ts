@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexEnd extends RegexBase {
   private rest: RegexBase;
@@ -9,7 +9,7 @@ class RegexEnd extends RegexBase {
 
   _match(text: string, start: number): number {
     if (start !== text.length) {
-      return undefined;
+      return INVALID_INDEX;
     }
 
     if (this.rest === null) {

@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexLit extends RegexBase {
   private chars: string;
@@ -16,11 +16,11 @@ class RegexLit extends RegexBase {
   _match(text: string, start: number): number {
     const nextIndex = start + this.chars.length;
     if (nextIndex > text.length) {
-      return undefined;
+      return INVALID_INDEX;
     }
 
     if (text.slice(start, nextIndex) !== this.chars) {
-      return undefined;
+      return INVALID_INDEX;
     }
 
     if (this.rest === null) {

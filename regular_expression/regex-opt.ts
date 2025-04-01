@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 // Match zero or one
 class RegexOpt extends RegexBase {
@@ -11,14 +11,14 @@ class RegexOpt extends RegexBase {
   private child: RegexBase;
   private rest: RegexBase;
 
-  _match(text: string, start: number): number | undefined {
+  _match(text: string, start: number): number {
     const matchChild = this.child._match(text, start);
 
     // case 1: child matches, process with rest at this position
-    if (matchChild !== undefined) {
+    if (matchChild !== INVALID_INDEX) {
       if (this.rest !== null) {
         const matchWithRest = this.rest._match(text, matchChild);
-        if (matchWithRest !== undefined) {
+        if (matchWithRest !== INVALID_INDEX) {
           return matchWithRest;
         }
         // rest doesn't match, fallback to case 2

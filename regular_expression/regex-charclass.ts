@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 // Expressions like [xyz] are interpreted to mean “match any one of the characters x, y, or z”.
 class RegexCharClass extends RegexBase {
@@ -11,10 +11,10 @@ class RegexCharClass extends RegexBase {
     this.rest = rest;
   }
 
-  _match(text: string, start: number): number | undefined {
+  _match(text: string, start: number): number {
     for (const pattern of this.children) {
       const afterPattern = pattern._match(text, start);
-      if (afterPattern !== undefined) {
+      if (afterPattern !== INVALID_INDEX) {
         if (this.rest !== null) {
           return this.rest._match(text, afterPattern);
         }
@@ -22,7 +22,7 @@ class RegexCharClass extends RegexBase {
         return afterPattern;
       }
     }
-    return undefined;
+    return INVALID_INDEX;
   }
 }
 

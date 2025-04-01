@@ -1,4 +1,4 @@
-import { RegexBase } from "./regex-base";
+import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 // Match one or more character 
 class RegexPlus extends RegexBase {
@@ -11,23 +11,23 @@ class RegexPlus extends RegexBase {
     this.rest = rest;
   }
 
-  _match(text: string, start: number): number | null {
+  _match(text: string, start: number): number {
     const maxPossible = text.length - start;
     // Match at least one
     for (let num = maxPossible; num >= 1; num -= 1) {
       const afterMany = this._matchMany(text, start, num);
-      if (afterMany !== undefined) {
+      if (afterMany !== INVALID_INDEX) {
         return afterMany;
       }
     }
-    return undefined;
+    return INVALID_INDEX;
   }
 
   _matchMany(text: string, start: number, num: number) {
     for (let i = 0; i < num; i += 1) {
       start = this.child._match(text, start);
-      if (start === undefined) {
-        return undefined;
+      if (start === INVALID_INDEX) {
+        return INVALID_INDEX;
       }
     }
 
