@@ -3,7 +3,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 class RegexLit extends RegexBase {
   private chars: string;
   // the rest of the matcher
-  private rest: RegexBase
+  rest: RegexBase
   constructor(chars: string, rest: RegexBase | null) {
     super()
     this.chars = chars;

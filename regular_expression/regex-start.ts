@@ -2,7 +2,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexStart extends RegexBase {
   // the rest of the matcher
-  private rest: RegexBase
+  rest: RegexBase
   constructor(rest: RegexBase | null) {
     super()
     this.rest = rest;

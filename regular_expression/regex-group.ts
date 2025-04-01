@@ -3,7 +3,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 // Matches the exact sequence "xyz" (e.g., "a(bc)d" only matches "abcd").
 class RegexGroup extends RegexBase {
   private children: RegexBase[];
-  private rest: RegexBase;
+  rest: RegexBase;
 
   constructor(children: RegexBase[], rest: RegexBase | null) {
     super();

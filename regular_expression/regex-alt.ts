@@ -1,7 +1,7 @@
 import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexAlt extends RegexBase {
-  private rest: RegexBase;
+  rest: RegexBase;
   private left: RegexBase;
   private right: RegexBase;
 

@@ -3,7 +3,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 // Expressions like [xyz] are interpreted to mean “match any one of the characters x, y, or z”.
 class RegexCharClass extends RegexBase {
   private children: RegexBase[];
-  private rest: RegexBase;
+  rest: RegexBase;
 
   constructor(children: RegexBase[], rest: RegexBase | null) {
     super();

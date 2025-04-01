@@ -9,7 +9,7 @@ class RegexOpt extends RegexBase {
   }
 
   private child: RegexBase;
-  private rest: RegexBase;
+  rest: RegexBase;
 
   _match(text: string, start: number): number {
     const matchChild = this.child._match(text, start);

@@ -3,7 +3,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 // Match one or more character 
 class RegexPlus extends RegexBase {
   private child: RegexBase;
-  private rest: RegexBase;
+  rest: RegexBase;
 
   constructor(child: RegexBase, rest: RegexBase | null) {
     super();

@@ -5,7 +5,7 @@ import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexAnyLazy extends RegexBase {
   private child: RegexBase;
-  private rest: RegexBase;
+  rest: RegexBase;
   constructor(child: RegexBase, rest: RegexBase | null) {
     super();
     this.child = child;

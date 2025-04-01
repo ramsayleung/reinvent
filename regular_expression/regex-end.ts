@@ -1,7 +1,7 @@
 import { INVALID_INDEX, RegexBase } from "./regex-base";
 
 class RegexEnd extends RegexBase {
-  private rest: RegexBase;
+  rest: RegexBase;
   constructor(rest: RegexBase | null) {
     super()
     this.rest = rest;
