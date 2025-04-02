@@ -36,4 +36,5 @@
   1. [[file:unit_test/reinvent_unit_test.org][单元测试框架]]
   2. [[file:file_backup/reinvent_file_backup.org][文件备份]]
   3. [[file:html_selector/reinvent_selector.org][HTML Selector]]
+  4. [[file:regular_expression/reinvent_regex.org][正则表达式引擎]]
  

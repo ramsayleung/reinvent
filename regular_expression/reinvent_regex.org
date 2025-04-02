@@ -1,0 +1,467 @@
+#+LATEX_CLASS: ramsay-org-article
+#+LATEX_CLASS_OPTIONS: [oneside,A4paper,12pt]
+#+AUTHOR: Ramsay Leung
+#+EMAIL: ramsayleung@gmail.com
+#+DATE: 2025-03-15 Sat 11:01
+#+OPTIONS: author:nil ^:{} H:4
+#+HUGO_BASE_DIR: ~/code/org/ramsayleung.github.io
+#+HUGO_SECTION: zh/post/2025
+#+HUGO_CUSTOM_FRONT_MATTER: :toc true
+#+HUGO_AUTO_SET_LASTMOD: t
+#+HUGO_DRAFT: false
+#+DATE: [2025-03-15 Sat 11:01]
+#+TITLE: 重新造轮子系列(四)：正则表达式引擎
+#+HUGO_TAGS: reinvent
+#+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
+项目 GitHub 地址: [[https://github.com/ramsayleung/reinvent/tree/master/regular_expression][Regex]] 
+* 前言
+  所谓的正则表达式，指的是由一系列字符和特殊字符组成的模式，用于描述要匹配的文本。
+
+  最开始是一位叫 [[https://en.wikipedia.org/wiki/Stephen_Cole_Kleene][Stephen Cole Kleene]] 的数学家用被他称为 Regular Events 的数学表达式来描述这一模型，在 1968 年，由C语言之父 Ken Tompson 将这个表达式引入到行编辑器 [[https://en.wikipedia.org/wiki/QED_(text_editor)][QED]], 随后是 Unix 上的编辑器 [[https://en.wikipedia.org/wiki/Ed_(software)][ed]] (vi 的前身) ，并最终引入到 [[https://en.wikipedia.org/wiki/Grep][grep]].
+  
+  我一直很好奇正则表达式 (regular expression, 即 =Regex= ) 是怎么实现的，自正则表达式被引入编程语言之后 之后，可谓说有字符串的地方就基本有正则表达式。
+
+  想起个关于 =Regex= 的经典笑话:
+  #+begin_quote
+  程序员A：我有个问题，想用正则表达式解决。
+
+  程序员B：现在你有两个问题了。
+  #+end_quote
+* 需求
+  完整版本的正则表达式非常复杂，我们的实现不会覆盖所有的规则，所以先来看下我们要支持的正则表达式规则：
+  | 含义                 | 字符 |
+  | 任意的字符 =c=       | =c= |
+  | 任意的单个字符       | =.= |
+  | 匹配开头的字符       | =^= |
+  | 匹配结尾的字符       | =$= |
+  | 匹配零个或多个的字符 | =*= |
+
+  虽然这五条原则看起来不是很多，但是已经覆盖日常开发绝大多数的场景了。
+
+  比如 =^ab*c= 就意味着匹配以 =a= 开头，并且0到无数个的 =b=, 再接一个字符 =c=, 所以它能匹配:
+  =ac=, =abc= 以及 =abbbbbc=
+* 初始版本
+  根据上面的需求，可以使用40行不到的代码就实现一个简单的递归版本的正则表达式引擎：
+
+  #+begin_src js
+    export const match = (pattern: string, text: string): boolean => {
+      // '^' at start of pattern matches start of next.
+      if (pattern[0] === '^') {
+        return matchHere(pattern, 1, text, 0);
+      }
+
+      // Try all possible starting points for pattern.
+      let iText = 0;
+      do {
+        if (matchHere(pattern, 0, text, iText)) {
+          return true;
+        }
+        iText += 1;
+      } while (iText < text.length);
+
+      // Nothing worked.
+      return false;
+    }
+
+    const matchHere = (pattern: string, patternIndex: number, text: string, textIndex: number) => {
+      // There is no more pattern to match.
+      if (patternIndex === pattern.length) {
+        return true;
+      }
+
+      // '$' at end of pattern matches end of text.
+      if ((patternIndex === (pattern.length - 1)) && (pattern[patternIndex] === '$') && (textIndex === text.length)) {
+        return true;
+      }
+
+      // '*' following current character means zero or more.
+      if (((pattern.length - patternIndex) > 1) && (pattern[patternIndex + 1] === '*')) {
+        // Try matching zero occurences(skip the current char and the '*')
+        if (matchHere(pattern, patternIndex + 2, text, textIndex)) {
+          return true;
+        }
+
+        // Try matching one or more occurences
+        while ((textIndex < text.length) && (pattern[patternIndex] === '.' || text[textIndex] === pattern[patternIndex])) {
+          // Try to match the rest of pattern after consuming this
+          // character
+          if (matchHere(pattern, patternIndex + 2, text, textIndex + 1)) {
+            return true;
+          }
+          textIndex += 1;
+        }
+        // if there is any match, it will return early in the while loop,
+        // so when reach this statement, it means nothing found.
+        return false;
+      }
+
+      // Match a single chacater.
+      if (textIndex < text.length && (pattern[patternIndex] === '.') || (pattern[patternIndex] === text[textIndex])) {
+        return matchHere(pattern, patternIndex + 1, text, textIndex + 1);
+      }
+
+      // Nothing worked.
+      return false;
+    }
+  #+end_src
+
+  实现思路如下图:
+
+  #+begin_src plantuml :file ../img/reinvent_simple_regex_design.png :exports results
+    @startuml Regex Matching Activity Diagram
+
+    start
+    :match(pattern, text);
+
+    if (pattern starts with '^') then (yes)
+      :Call matchHere(pattern, 1, text, 0);
+    else (no)
+      repeat
+        :Try matchHere(pattern, 0, text, iText);
+        :iText += 1;
+      repeat while (iText < text.length)
+        ->no;
+      :All positions failed;
+    endif
+
+    partition matchHere {
+      if (pattern fully consumed?) then (yes)
+        :Return true;
+        stop
+      elseif (end anchor '$' matches?) then (yes)
+        :Return true;
+        stop
+      elseif (next char is '*') then (yes)
+        fork
+          :Try zero occurrences\nmatchHere(pattern, i+2, text, j);
+        fork again
+          repeat
+            :Consume matching char;
+            :Try matchHere(pattern, i+2, text, j+1);
+          repeat while (char matches)
+          ->no;
+          :Return false;
+        end fork
+      else (no special char)
+        if (char matches?) then (yes)
+          :matchHere(pattern, i+1, text, j+1);
+        else (no)
+          :Return false;
+        endif
+      endif
+    }
+
+    stop
+
+    @enduml
+  #+end_src
+
+  #+RESULTS:
+  [[file:../img/reinvent_simple_regex_design.png]]
+
+  好的，我们的正则表达式引擎完工了，正则表达式看起来也没有那么难嘛。
+  
+  只是用是能用的，但是看起来不同含义的字符都耦合在 =matchHere= 函数了，想要支持新的字符匹配(例如 =+=, 或者 =|= )很难扩展。
+* 面向对象版本
+** 接口
+   再来思考一下版本1的问题:
+
+   我们把不同模式的符号都耦合在同一个函数中。
+
+   在讨论解耦方式之前，先来观察下每个模式的共同点，以便我们抽象接口。
+
+   以最简单的 =^c= 模式为例，我们需要将 =c= 与给定的文本 =abc= 和 =cde= 作比较，首先匹配第一个字符，如果匹配失败(如 =abc=)，则直接结束； 如果匹配第一个字符成功（=cde=）, 那么就匹配剩余的其他字符, 直到模式匹配结束.
+
+   那么对于精确匹配字符的模式 =Literal= 而言，入参就是字符 =c= 和文本 =text=, 返回结果就是true/false, 用来表示是否匹配成功.
+
+   #+begin_src javascript
+     const literal_match = (pattern: string, text: string): boolean => {}
+   #+end_src
+
+   如果不同的模式匹配都使用这个函数签名的话，每次匹配之后，都需要把剩下需要匹配的文本给复制出来，频繁拷贝字符串可能会导致性能开销很大。
+
+   我们可以做个小优化, 通过下标 =start= 来指定需要匹配的文本, 就可以在不同的模式中都只使用同一份的字符串，避免了多次拷贝的开销。
+
+   而返回结果也不再是 boolean, 而是下一个模式需要匹配的下标。
+
+   比如 =^c= 来匹配 =cde= ，匹配成功之后就返回 =1=, 就意味着下个模式从 =1=, 也就是 =d= 开始匹配.
+
+   那匹配失败要怎么表示？这个也很简单，返回一个不合法的下标，比如 =-1= 即可，那么我们的模式的函数接口就变成:
+
+   #+begin_src js
+     const literal_match = (pattern: string, text: string, index: number): number => {}
+   #+end_src
+** 模板设计模式
+   既然版本一提到了 =matchHere= 实现耦合在一起，那么有什么方式可以实现解耦呢？
+
+   其中的一个经典解决方式就是面向对象编程(Object Oriented Programming)，这也是面向对象编程的设计初衷。
+
+   既然前面实现的缺点是不同的模式耦合在一起，那么我们可以把每种模式实现成一个函数或者一个类，然后再通过某种模式给组合起来。
+
+   既然用到 OOP, 那么自然少不了设计模式了。如果使用一种模式表示成一个类，那么会是哪种设计模式呢？
+
+   要不就是[[https://refactoring.guru/design-patterns/strategy][策略模式(strategy)]]:
+   #+begin_src c++
+     class ConcreteAlgorithm : IAlgorithm
+     {
+         void DoAlgorithm(int datum) {...}
+     }
+
+     class Strategy
+     {
+         Strategy(IAlgorithm algo) {...}
+
+         void run(int datum) { this->algo.DoAlgorithm(datum); }
+     }
+   #+end_src
+
+   要么就是[[https://refactoring.guru/design-patterns/template-method][模板方法(template method)]]:
+   #+begin_src c++
+     class ConcreteAlgorithm : AbstractTemplate
+     {
+         void DoAlgorithm(int datum) {...}
+     }
+
+     class AbstractTemplate
+     {
+         void run(int datum) { DoAlgorithm(datum); }
+
+         virtual void DoAlgorithm() = 0; // abstract
+     }
+   #+end_src
+
+   看起来好像都可以，那不如就使用模板方式吧。
+** 单向链表
+   那么就让我们来定义个基类 =RegexBase= :
+   #+begin_src js
+     export const INVALID_INDEX = -1;
+     export abstract class RegexBase {
+       // index to continue matching at or -1 indicating that matching failed
+       abstract _match(text: string, start: number): number;
+       abstract rest: RegexBase;
+
+       match(text: string): boolean {
+         // check if the pattern matches at the start of the string
+         if (this._match(text, 0) !== INVALID_INDEX) {
+           return true;
+         }
+         return false;
+       }
+     }
+   #+end_src
+
+   细看之下, 函数签名与我们上文讨论的有所不同，那是因为我们把模式 =pattern= 作为每个模式类的成员变量了，就不需要显式定义在 =_match= 函数中了。
+
+   再来看下我们精确匹配字符的 =Lit= 模式类的实现:
+   #+begin_src js
+     class RegexLit extends RegexBase {
+       private chars: string;
+       rest: RegexBase
+       constructor(chars: string, rest: RegexBase | null = null) {
+         super()
+         this.chars = chars;
+         this.rest = rest;
+       }
+
+       _match(text: string, start: number): number {
+         const nextIndex = start + this.chars.length;
+         if (nextIndex > text.length) {
+           return INVALID_INDEX;
+         }
+
+         if (text.slice(start, nextIndex) !== this.chars) {
+           return INVALID_INDEX;
+         }
+
+         if (this.rest === null) {
+           return nextIndex;
+         }
+
+         return this.rest._match(text, nextIndex);
+       }
+     }
+   #+end_src
+
+   实现很简单, 但 =rest= 又是什么呢?
+
+   还是以 =^c= 为例, 现在改复杂一点, 模式变成 =^cd= 来匹配 =cde= ，模式 =^c= 匹配完 =c= 之后, 就要使用剩下的模式(=rest=) =d= 来匹配剩下的文本 =de=, 剩下的模式可能也会再包含剩下的模式，用来匹配再被剩下的文本，依此类推.
+   
+   [[file:../img/reinvent_regex_rest_pointer.jpg]]
+
+   相当于 =rest= 就是指向下一个模式类的单向指针，用来表示下一个模式需要匹配剩余的文本，直到所有的模式匹配完成，即 =rest= 指针指向 =null=
+
+   所以模式 =cde= 就可以表示成 =Lit('c', Lit('d', Lit('e')))=
+
+   而所有的模式组合在一起，本质就是一条单向链条，而正则表达式就是判断是否存在依次匹配链表中所有模式的文本。
+** Any 模式
+   Any 模式即 =*= 匹配 0到任意个前一个字符，与其类似的还有 Plus 模式，即 =+= 匹配1到任意个前一个字符字符；以及 =?= 表示匹配0到1个前一个字符，Any算是最有代表性和最难实现的模式。
+
+   即 =a*b= 表示可以匹配0到任意个 =a= ，再匹配一个 =b= , 所以 =b=, =ab=, =aaaaaab= 它都可以匹配上。
+
+   那么问题就来了，既然它可以匹配0到任意个字符，那么匹配的时候我要匹配几个字符呢？
+
+   理论上有 =N= 个的可能性, N = 待匹配文本 =text= 的长度。
+
+   既然不知道要匹配几个字符，那不如我们把所有可能性都穷举一次呗，而这种穷举算法，则被称为是[[https://labuladong.online/algo/essential-technique/backtrack-framework/#%E5%85%A8%E6%8E%92%E5%88%97%E9%97%AE%E9%A2%98%E8%A7%A3%E6%9E%90][回溯算法]]([[https://en.wikipedia.org/wiki/Backtracking][backtracking]])
+
+   我们知道穷举的上界是 N(~N=len(text)~), 下界是 0, 那么是从 0 穷举到 =N=, 还是从 =N= 穷举到 =0= 呢？
+
+   两种方法都可以解决问题，计算机科学家们还给这两种做法起了个洋气的名字， =N= -> =0=, 因为是先开始匹配所有的字符，所以就被称为贪婪匹配 greedy(eager) matching.
+
+   而从 =0= -> =N=, 因为是从0开始，所以又被称为是惰性匹配 lazy matching。
+
+   从性能的角度来说，是 =lazy matching= 更优，因为它尽可能地去掉了不必要的匹配了。
+
+   我们可以先来看下贪婪匹配的实现，再看下惰性匹配：
+   
+   #+begin_src js
+     class RegexAny extends RegexBase {
+       private child: RegexBase;
+       private rest: RegexBase;
+
+       constructor(child: RegexBase, rest: RegexBase | null) {
+         super();
+         this.child = child;
+         this.rest = rest;
+       }
+
+       _match(text: string, start: number): number | null {
+         const maxPossible = text.length - start;
+         for (let num = maxPossible; num >= 0; num -= 1) {
+           const afterMany = this._matchMany(text, start, num);
+           if (afterMany !== undefined) {
+             return afterMany;
+           }
+         }
+         return undefined;
+       }
+
+       _matchMany(text: string, start: number, num: number) {
+         for (let i = 0; i < num; i += 1) {
+           start = this.child._match(text, start);
+           if (start === undefined) {
+             return undefined;
+           }
+         }
+
+         if (this.rest !== null) {
+           return this.rest._match(text, start);
+         }
+         return start;
+       }
+     }
+   #+end_src
+
+   =a*b= 会被解析成, =Any(Lit('a'), Lit('b'))=, 因为 =*= 表示匹配0到任意个前一个字符，前一个字符还可能另外一种模式，所以我们可以把前一个字符也解析成模式，作为 =child= 传入到 =Any=.
+
+   =_matchMany= 是从 =start= 匹配到 =start+num= 位置，看是否匹配，而 =maxPossible= 表示当前剩余文本中可能的最大匹配次数.
+
+   以 ~text = "aab"~, ~start = 0~, ~pattern = a*b~ 为例， ~maxPossible = len(text) = 3~,
+   1. 第一轮尝试(~num=3~):
+      - 尝试匹配 3 个 ~a~ -> 失败(只有 2 个 ~a~)
+   2. 第二轮尝试(~num=2~):
+      - 匹配 2 个 =a=(位置 ~0->1->2~)
+      - 然后匹配 rest(b 在位置 =2->3=): 成功！
+      - 返回 3
+
+   #+begin_src plantuml :file ../img/reinvent_regex_match_aab.png :exports results
+     @startuml Simplified a*b Matching
+
+     start
+     :Call _match(**"aab"**, 0);
+
+     partition "Main Matching Loop" {
+             :maxPossible = 3 (text.length - start);
+             :num = maxPossible;
+
+             while (num >= 0) is (Try next count)
+                     :Try match <color:red>num</color> **'a'**s\nfrom start=0;
+
+                     if (Matched num **'a'**s?) then (yes)
+                             :Try match **'b'** at position <color:blue>start+num</color>;
+                             if (**'b'** matched?) then (yes)
+                                     :Return success (pos=<color:blue>start+num+1</color>);
+                                     stop
+                             else (no)
+                                     :num -= 1;
+                             endif
+                     else (no)
+                             :num -= 1;
+                     endif
+             endwhile
+     }
+
+     :Return fail;
+     stop
+
+     @enduml
+      #+end_src
+
+   以及使用模式 =a*ab= 来匹配文本 =ab= 的过程:
+   [[file:../img/reinvent_regex_match_ab.jpg]]
+** 支持的模式
+   每种模式对应一个单独的类之后，再通过 =rest= 指针进行关联，现在的实现就非常易于扩展了，我们可以很容易地支持其他的模式，具体列表如下：
+
+   | 含义                      | 字符  | 例子                                | 对应实现   |
+   | 任意的字符 =c=            | =c=  | =c= 匹配字符c                       | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-lit.ts][Lit]]       |
+   | 任意的单个字符            | =.=  | ~.~ 匹配任意字符                    |           |
+   | 匹配开头的字符            | =^=  | ~^c~ 匹配以 =c= 开头的字符串        | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-start.ts][Start]]     |
+   | 匹配结尾的字符            | =$=  | ~c$~ 匹配以 =c= 结尾的字符串        | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-end.ts][End]]       |
+   | 匹配零个或多个的字符      | =*=  | ~a*~ 匹配0-任意个a的字符串, 贪婪匹配 | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-any.ts][GreedyAny]] |
+   | 匹配零个或多个的字符      | =*=  | ~a*~ 匹配0-任意个a的字符串, 惰性匹配 | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-lazy-any.ts][LazyAny]]   |
+   | 匹配一个或多个的字符      | =+=  | ~a+~ 匹配1-任意个a的字符串          | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-plus.ts][Plus]]      |
+   | 匹配零个或一个的字符      | =?=  | ~a?~ 匹配0-1个a的字符串             | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-opt.ts][Opt]]       |
+   | 多选一匹配                | =❘=   | ~a❘b~ 匹配a或b的字符串               | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-alt.ts][Alt]]       |
+   | 序列匹配                  | =()= | ~(ab)~ 匹配 ab 的字符串             | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-group.ts][Group]]     |
+   | 匹配方括号内的任意单个字符 | =[]= | ~[abcd]~ 匹配a或b或c或d的字符串     | [[https://github.com/ramsayleung/reinvent/blob/master/regular_expression/regex-charclass.ts][CharClass]] |
+
+   #+begin_src js
+     describe('Regex testsuite', () => {
+         it.each([
+             ['a', 'a', true, Lit('a')],
+             ['b', 'a', false, Lit('b')],
+             ['ab', 'ba', false, Lit('ab')],
+             ['^a', 'ab', true, Start(Lit('a'))],
+             ['^b', 'ab', false, Start(Lit('b'))],
+             ['a$', 'ab', false, Lit('a', End())],
+             ['a$', 'ba', true, Lit('a', End())],
+             ['a*', '', true, Any(Lit('a'))],
+             ['a*', 'baac', true, Any(Lit('a'))],
+             ['ab*c', 'ac', true, Lit('a', Any(Lit('b'), Lit('c')))],
+             ['ab*c', 'acc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+             ['ab*c', 'abc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+             ['ab*c', 'abbbc', true, Lit('a', Any(Lit('b'), Lit('c')))],
+             ['ab*c', 'abxc', false, Lit('a', Any(Lit('b'), Lit('c')))],
+             ['ab*c', 'ac', true, Lit('a', LazyAny(Lit('b'), Lit('c')))],
+             ['ab*c', 'acc', true, Lit('a', LazyAny(Lit('b'), Lit('c')))],
+             ['ab*', 'ab', true, Lit('a', LazyAny(Lit('b')))],
+             ['ab+c', 'ac', false, Lit('a', Plus(Lit('b'), Lit('c')))],
+             ['ab+c', 'abc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+             ['a(b|c)d', 'xabdy', true, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))],
+             ['a(b|c)d', 'xabady', false, Lit('a', Alt(Lit('b'), Lit('c'), Lit('d')))],
+             ['ab?c', 'abc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+             ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+             ['ab?c', 'a', false, Lit('a', Opt(Lit('b'), Lit('c')))],
+             ["[abcd]", 'a', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+             ["[abcd]", 'ab', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+             ["[abcd]", 'xhy', false, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')])],
+             ["c[abcd]", 'c', false, Lit('c', CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
+         ])('Regex base test ("%s" "%s" "%p")', (_pattern, text, expected, matcher) => {
+             const actual = matcher.match(text);
+             expect(actual).toBe(expected);
+         })
+     });
+     #+end_src
+
+   顺便一提的是，这种相同的验证逻辑, 但是输入多个不同的参数以验证不同case的做法，叫做 =Parameterized Test=
+
+  我在《[[https://ramsayleung.github.io/zh/categories/%E6%B5%8B%E8%AF%95%E6%8A%80%E8%83%BD%E8%BF%9B%E9%98%B6/][测试技能进阶系列]]》的第二篇也曾经介绍过： [[https://ramsayleung.github.io/zh/post/2024/%E6%B5%8B%E8%AF%95%E6%8A%80%E8%83%BD%E8%BF%9B%E9%98%B6%E4%BA%8C_parameterized_tests/][Parameterized Tests]]
+
+  这样我们就完成了一个功能较完整的正则表达式引擎了, 只不过我们平时用表达式是 =a*bc= ，现在要写成 =Any(Lit('a'), Lib('b', Lib('c')))= 也太麻烦了吧，接下来我们就来解决这个问题。
+* 表达式解析
+* 抽象语法树
+* 组装
+* 参考
+  - https://en.wikipedia.org/wiki/Stephen_Cole_Kleene
+  - https://en.wikipedia.org/wiki/Ed_(software)
+  - https://en.wikipedia.org/wiki/Grep
