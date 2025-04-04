@@ -210,7 +210,7 @@
 
   只是我未曾想到的是，写了这段话后不足一年，C++就成为了我下一家公司干活的主力语言; 而现在，我又在重新写 Java, 着实是「白衣苍狗」。
 
-  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
+  [[file:../reinvent_project.org][回到本系列的目录]]
 * Footnotes
 [fn:4] https://github.com/ramsayleung/reinvent/tree/master/html_selector 
 [fn:3] https://refactoring.guru/design-patterns/strategy 

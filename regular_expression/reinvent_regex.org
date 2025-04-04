@@ -775,7 +775,7 @@
 
   「没有启程的路才会遥不可及」，很多时候，困难只是我们给自己设下的心理障碍。
   
-  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
+  [[file:../reinvent_project.org][回到本系列的目录]]
 * 参考
   - https://en.wikipedia.org/wiki/Stephen_Cole_Kleene
   - https://en.wikipedia.org/wiki/Ed_(software)

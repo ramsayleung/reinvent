@@ -229,7 +229,7 @@
 
   如果想要实现一个更健壮易用的备份文件，可以参考下关于这 [[https://michael.stapelberg.ch/posts/2022-06-18-rsync-overview/][rsync 系列的文章]] , =rsync= 是Linux 上非常流行的增量备份的文件，不仅可以备份本地文件，更可以把文件备份把远程服务器，非常强大。
 
-  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
+  [[file:../reinvent_project.org][回到本系列的目录]]
 * 参考
   - https://third-bit.com/sdxjs/file-backup/
   - https://en.wikipedia.org/wiki/Cryptographic_hash_function

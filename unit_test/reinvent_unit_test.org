@@ -733,7 +733,7 @@
       }await hope.run(options.tag);
     #+end_src
 * 参考
-  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
+  [[file:../reinvent_project.org][回到本系列的目录]]
   
   - https://third-bit.com/sdxjs/unit-test/
   - https://blog.youxu.info/2008/11/30/pearl-in-smalltal/
