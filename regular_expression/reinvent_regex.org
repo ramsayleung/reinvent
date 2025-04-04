@@ -245,6 +245,11 @@
          if (this._match(text, 0) !== INVALID_INDEX) {
            return true;
          }
+         for (let i = 1; i < text.length; i += 1) {
+           if (this._match(text, i) !== undefined) {
+             return true;
+           }
+         }
          return false;
        }
      }
@@ -457,11 +462,323 @@
 
   我在《[[https://ramsayleung.github.io/zh/categories/%E6%B5%8B%E8%AF%95%E6%8A%80%E8%83%BD%E8%BF%9B%E9%98%B6/][测试技能进阶系列]]》的第二篇也曾经介绍过： [[https://ramsayleung.github.io/zh/post/2024/%E6%B5%8B%E8%AF%95%E6%8A%80%E8%83%BD%E8%BF%9B%E9%98%B6%E4%BA%8C_parameterized_tests/][Parameterized Tests]]
 
-  这样我们就完成了一个功能较完整的正则表达式引擎了, 只不过我们平时用表达式是 =a*bc= ，现在要写成 =Any(Lit('a'), Lib('b', Lib('c')))= 也太麻烦了吧，接下来我们就来解决这个问题。
+  这样我们就完成了一个功能较完整的正则表达式引擎了。
 * 表达式解析
-* 抽象语法树
-* 组装
+  虽然我们已经完成了一个正则表达式引擎，只不过我们平时用表达式是 =a*bc= ，现在要写成 =Any(Lit('a'), Lib('b', Lib('c')))= 多个类的实例也太烦琐了。
+
+  让我们再来分析下正则表达式，以 =^(a|b|$)*z$= 为例，以任意数量的 =a=, =b=, 或 =$= 开头, 再紧接一个 =z=, 然后结束。
+
+  我们可以创建一个树来表达这个表达式:
+
+  [[file:../img/reinvent_regex_express_as_tree.jpg]]
+
+  在考虑如何把表达式变成上面那棵树之前，我们可以先从最简单的步骤开始：分割字符串
+
+  正如物理学家给不可再分的元素称之为「原子」(atom), 计算机科学家也给不可再分割的文本起了一个名字，称之为 *token*, 类似 =a=, =b=, =$=, =*= 这些都是 token，而把文本切分成 token 的过程，即为 /tokenize/ 。
+
+  不同的token可能代表不同的含义，像 =a=, =b=, =c= 这类，所以它们的值不同，但是它们都可以被称为字面量(Literal), 而像 =*=, =+=, =|=, =(=, =)= 这样的字符又各种其代表的含义, 如:
+  #+begin_src js
+    const SYMBOL_TOKEN_TYPE_MAP = {
+      '*': TokenKind.Any,
+      '|': TokenKind.Alt,
+      '(': TokenKind.GroupStart,
+      ')': TokenKind.GroupEnd,
+    }
+  #+end_src
+
+  定义好 token 类型之后， =tokenize= 跃然纸上了：
+
+  直接按照字符作匹配，如果能匹配上的就是特殊类型的 =Token= ，不然就是字面量:
+  #+begin_src js
+    export interface Token {
+      kind: TokenKind,
+      location: number
+      value?: string,
+    }
+
+    export const tokenize = (text: string) => {
+      const result: Token[] = [];
+      for (let i = 0; i < text.length; i += 1) {
+        const c = text[i]
+        if (c in SIMPLE) {
+          result.push({ kind: SIMPLE[c], location: i });
+        } else if ((c === '^') && (i === 0)) {
+          result.push({ kind: TokenKind.Start, location: i });
+        } else if ((c === '$') && (i === (text.length - 1))) {
+          result.push({ kind: TokenKind.End, location: i });
+        } else {
+          result.push({ kind: TokenKind.Lit, location: i, value: c });
+        }
+      }
+      return result;
+    }
+  #+end_src
+
+  =^(a|b|$)*z$= 就会被解析成如下的结果:
+  #+begin_src js
+    [
+      {
+        "kind": "Start",
+        "location": 0
+      },
+      {
+        "kind": "GroupStart",
+        "location": 1
+      },
+      {
+        "kind": "Lit",
+        "location": 2,
+        "value": "a"
+      },
+      {
+        "kind": "Alt",
+        "location": 3
+      },
+      {
+        "kind": "Lit",
+        "location": 4,
+        "value": "b"
+      },
+      {
+        "kind": "Alt",
+        "location": 5
+      },
+      {
+        "kind": "Lit",
+        "location": 6,
+        "value": "$"
+      },
+      {
+        "kind": "GroupEnd",
+        "location": 7
+      },
+      {
+        "kind": "Any",
+        "location": 8
+      },
+      {
+        "kind": "Lit",
+        "location": 9,
+        "value": "z"
+      },
+      {
+        "kind": "End",
+        "location": 10
+      }
+    ]
+  #+end_src
+* 组装抽象语法树
+  =tokenize= 的结果是一个包含 Token 的列表，我们要如何组装成树状数据结构呢？
+
+  顺带一提，这树状数据结构全称是抽象语法树(Abstract syntax tree, AST), 是一种用来表示程序结构的数据结构，如:
+  
+  [[file:../img/Abstract_syntax_tree_for_Euclidean_algorithm.svg.png]]
+
+  我们可以分情况来讨论，因为不同的模式有不同的组装方式，组装完之后的 AST 的输出是一个 =output=, 包含组装后的 =token= 列表:
+
+  对于表达式 =a=, 我们可以创建一个 =Lit= 类型的 =token= (为了便于理解，「创建」指创建一个 =token=, 然后插入到 =output=.)
+  
+  对于表达式 =a*= 呢？我们可以先创建一个 =Lit('a')= 的 =token=, 当遇到 =*= 时，因为 =*= 表示匹配0至任意的前一个字符, 所以我们可以创建一个 =Any= 类型的 token, 然后把 =output= 最后一个元素 =pop= 出来，作为 =Any= 的 =child= 元素.
+
+  [[file:../img/reinvent_regex_construct_ast_any.jpg]]
+  
+  对于表达式 =(ab)=, 情况就变得复杂一些:
+  当遇到 =(= 括号的时候，我们可以创建一个 =Group= ，但是问题在于，我们不知道这个 =Group= 什么时候结束，即不知道什么时候才会遇上 =)=.
+
+  所以我们需要换种解决思路：当遇到 =(=, 创建一个 =GroupStart= 类型的 =token=, 然后再继续处理 =a=, =b=, 当遇到 =)= 时，创建一个 =Group= 类型的 =token=, 然后一直调用 =pop= 函数直到把 =GroupStart= 也 =pop= 出来, 然后把过程中 =pop= 出来的 =token= 都当作是 =Group= 的 =children= 列表，而 =GroupStart= 相当于起到一个标记符的作用。
+
+  这种思路就自动处理了 =(a*)= 和 =(a(b*)c)= 的差异:
+
+  [[file:../img/reinvent_regex_ast_group.jpg]]
+
+  对于表达式 =a|b=, 我们是否可以参考 =Any= 的做法呢?
+
+  遇到 =a= 的时候先创建一个 =Lit('a')=, 遇到 =|= 时再创建一个 =Alt=, 然后把 =Lit('a')= 从 =output= pop 出来作为 =left= 节点， 再遇到下一个字符 =b= 的时候，再把 =Alt= 从 output pop 出来，把 =b= 作为 =right= 节点。
+
+  听起来没问题，但是上面的算法无法正确解析 =a|b*=, 它表示匹配一个 =a= 或者是任意数量的 =b=, 但是我们的做法会把它解析成 =(a|b)*=, 即任意数量的 =a= 或 =b=.
+
+  更合理的做法是先部分组装 Alt 的 =left= 节点，等解析完所有字符之后，再重新解析一次，把 =right= 节点给组装上。
+
+  以 =a|b*= 为例子:
+  1. 创建一个 =Lit('a')= token
+  2. 当遇到 =|= 的时候，创建一个 =Alt=, 并将 =Lit('a')= pop 出来作为 =left= 节点
+  3. 创建一个 =Lit('b')= token
+  4. 创建一个 =Any= token, 并将 =Lit('b')= pop 出来作为 =child= 节点.
+  5. 当解析完所有字符后, 再遍历一次 =output=, 如果遇到 =Alt= token, 那么就把它的下一个 =token= (即 =Any=) 作为它的 =right= 节点.
+
+  [[file:../img/reinvent_regex_ast_alt.jpg]]
+
+  实现代码如下:
+  #+begin_src js
+    export const parse = (text: string) => {
+      const result: Token[] = [];
+      const allTokens = tokenize(text);
+      for (let i = 0; i < allTokens.length; i += 1) {
+        const token = allTokens[i];
+        const isLast = i === allTokens.length - 1;
+        handle(result, token, isLast);
+      }
+      return compress(result);
+    }
+
+    const handle = (result: Token[], token: Token, isLast: boolean) => {
+      if (token.kind === TokenKind.Lit) {
+        result.push(token);
+      } else if (token.kind === TokenKind.Start) {
+        assert(result.length === 0, 'Should not have start token after other tokens');
+        result.push(token);
+      } else if (token.kind === TokenKind.End) {
+        assert(isLast, `Should not have end token before other tokens`);
+        result.push(token);
+      } else if (token.kind === TokenKind.GroupStart) {
+        result.push(token);
+      } else if (token.kind === TokenKind.GroupEnd) {
+        result.push(groupEnd(result, token));
+      } else if (token.kind === TokenKind.Any) {
+        assert(result.length > 0, `No Operand for '*' (location ${token.location})`);
+        token.child = result.pop();
+        result.push(token)
+      } else if (token.kind === TokenKind.Alt) {
+        assert(result.length > 0, `No Operand for '|' (location ${token.location})`);
+        token.left = result.pop();
+        token.right = null;
+        result.push(token)
+      } else {
+        assert(false, `UNIMPLEMENTED`);
+      }
+    }
+
+    const groupEnd = (result: Token[], token: Token): Token => {
+      const group: Token = {
+        kind: TokenKind.Group,
+        location: null,
+        end: token.location,
+        children: []
+      };
+
+      while (true) {
+        assert(result.length > 0, `Unmatched end parenthesis (location ${token.location})`);
+        const child = result.pop();
+        if (child.kind === TokenKind.GroupStart) {
+          group.location = child.location;
+          break;
+        }
+        group.children.unshift(child);
+      }
+      return group;
+    }
+
+    // go through the output list to fill in the right side of Alts:
+    const compress = (raw: Token[]) => {
+      const cooked: Token[] = [];
+      while (raw.length > 0) {
+        const token = raw.pop();
+        if (token.kind === TokenKind.Alt) {
+          assert(cooked.length > 0, `No right operand for alt (location ${token.location})`);
+          token.right = cooked.shift();
+        }
+        cooked.unshift(token);
+      }
+      return cooked;
+    }
+  #+end_src
+
+  对于表达式 =a|(bc)=, 输出的 AST 如下:
+  #+begin_src js
+    [
+        {
+            kind: TokenKind.Alt, location: 1, left: {
+                kind: TokenKind.Lit, location: 0, value: 'a'
+            },
+            right: {
+                kind: TokenKind.Group, location: 2, end: 5,
+                children: [
+                    { kind: TokenKind.Lit, location: 3, value: 'b' },
+                    { kind: TokenKind.Lit, location: 4, value: 'c' },
+                ]
+            }
+        },
+    ]
+  #+end_src
+* 实例化
+  既然抽象语法树 AST 已经就绪了，我们就差最后一步了，把 AST 转变为我们的类实例.
+
+  还记得上文提到过, 不同的模式对应不同的类，然后通过 =rest= 指针指向下一个模式类，以此串成一个链表。
+
+  那么我们对于 =output= 这个包含多个 token 的列表，我们可以抽象成两个 token, 当前 token 和下一个 token:
+
+  假如我们有函数 =f= 可以把当前 =token= 初始化对应的模式类，我们只需要再把剩下的 token 列表初始化成 =rest=, 那么 =rest= 要怎么初始化呢？
+
+  只需要再调用 =f= 即可.
+
+  这不就是递归嘛! 是的，通过递归就很简单地把实例化也实现出来了:
+  #+begin_src js
+    export const compile = (text: string): RegexBase => {
+      const tokens: Token[] = parse(text);
+      return createObjectByAST(tokens);
+    }
+
+    // return instances of classes derived from RegexBase by abstract syntax tree
+    const createObjectByAST = (tokens: Token[]): RegexBase | null => {
+      if (tokens.length === 0) {
+        return null;
+      }
+      const token = tokens.shift();
+      if (token.kind === TokenKind.Lit) {
+        return Lit(token.value, createObjectByAST(tokens));
+      } else if (token.kind === TokenKind.Start) {
+        return Start(createObjectByAST(tokens));
+      } else if (token.kind === TokenKind.End) {
+        assert(tokens.length === 0, `Should not have end token before other tokens`);
+        return End();
+      } else if (token.kind === TokenKind.Alt) {
+        return Alt(createObjectByAST([token.left]), createObjectByAST([token.right]), createObjectByAST(tokens));
+      } else if (token.kind === TokenKind.Group) {
+        return Group(token.children.map((childToken) => createObjectByAST([childToken])), createObjectByAST(tokens));
+      } else if (token.kind === TokenKind.Any) {
+        return Any(createObjectByAST([token.child]), createObjectByAST(tokens));
+      } else {
+        assert(false, `UNKNOWN token type ${token.kind}`);
+      }
+    }
+  #+end_src
+* 总结
+  #+begin_src js
+      it.each([
+        ['a', 'a', true, Lit('a')],
+        ['^a', 'ab', true, Start(Lit('a'))],
+        ['a$', 'ab', false, Lit('a', End())],
+        ['a*', 'baac', true, Any(Lit('a'))],
+        ['ab+c', 'abc', true, Lit('a', Plus(Lit('b'), Lit('c')))],
+        ['ab+c', 'abxc', false, Lit('a', Plus(Lit('b'), Lit('c')))],
+        ['(ab)|(cd)', 'xaby', true, Alt(Group([Lit('a'), Lit('b')]), Group([Lit('c'), Lit('d')]))],
+        ['a(b|c)d', 'xabdy', true, Lit('a', Group([Alt(Lit('b'), Lit('c'))], Lit('d')))],
+        ['ab?c', 'ac', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+        ['ab?c', 'acc', true, Lit('a', Opt(Lit('b'), Lit('c')))],
+        ["[abcd]c", 'ac', true, CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')], Lit('c'))],
+        ["c[abcd]", 'c', false, Lit('c', CharClass([Lit('a'), Lit('b'), Lit('c'), Lit('d')]))],
+      ])('parse, compile and matcher test ("%s" "%s" "%p")', (pattern, text, expected, expectedMatcher) => {
+        const actualMatcher = compile(pattern);
+        expect(actualMatcher).toStrictEqual(expectedMatcher);
+        const actual = actualMatcher.match(text);
+        expect(actual).toBe(expected);
+      })
+  #+end_src
+
+  大功告成，终于将所有的功能都组装起来实现这个正则表达式引擎了, 除去前文提到的功能之外，还实现了 =\*= 转义特殊字符， =[xya]= 匹配 =x=, =y=, =z= 其中任意字符，以及 =*?= 实现惰性匹配的功能。
+
+  完整功能集的测试 case 可见 [[https://github.com/ramsayleung/reinvent/blob/master/__tests__/regular_expression/parser-test.ts][parser_test.ts]]
+
+  日常使用正则表达式的场景非常多，因为其强大的功能和表达能力，总会下意识觉得很难实现（当然，高性能的完整版本的确是非常有挑战性的）。
+
+  但是当自己把正则表达式引擎这个轮子拆开，再重新造一个出来之后，才感悟到：
+
+  「没有启程的路才会遥不可及」，很多时候，困难只是我们给自己设下的心理障碍。
+  
+  [[file:~/code/javascript/reinvent/reinvent_project.org][回到本系列的目录]]
 * 参考
   - https://en.wikipedia.org/wiki/Stephen_Cole_Kleene
   - https://en.wikipedia.org/wiki/Ed_(software)
   - https://en.wikipedia.org/wiki/Grep
+  - https://third-bit.com/sdxjs/regex-parser/
+  - https://third-bit.com/sdxjs/pattern-matching/
