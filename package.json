@@ -28,10 +28,13 @@
   },
   "dependencies": {
     "crypto": "^1.0.1",
+    "dom-serializer": "^2.0.0",
+    "domhandler": "^5.0.3",
     "fs-extra-promise": "^1.0.1",
     "glob": "^11.0.1",
     "htmlparser2": "^10.0.0",
     "mock-fs": "^5.5.0",
-    "object-sizeof": "^2.6.5"
+    "object-sizeof": "^2.6.5",
+    "yaml": "^2.7.1"
   }
 }
