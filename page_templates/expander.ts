@@ -8,12 +8,14 @@ import { IfHandler } from "./z-if";
 import { LoopHandler } from "./z-loop";
 import { NumHandler } from "./z-num";
 import { VarHandler } from "./z-var";
+import { TraceHandler } from "./z-trace";
 
 export enum HandlerType {
   If = 'z-if',
   Loop = 'z-loop',
   Num = 'z-num',
   Var = 'z-var',
+  Trace = 'z-trace',
 }
 
 const HANDLERS: Record<HandlerType, NodeHandler> = {
@@ -21,6 +23,7 @@ const HANDLERS: Record<HandlerType, NodeHandler> = {
   [HandlerType.Loop]: new LoopHandler(),
   [HandlerType.Num]: new NumHandler(),
   [HandlerType.Var]: new VarHandler(),
+  [HandlerType.Trace]: new TraceHandler(),
 }
 
 export class Expander extends Visitor {

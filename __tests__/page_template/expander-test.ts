@@ -102,4 +102,18 @@ describe('Expander test', () => {
     expect(expander.getResult()).toStrictEqual(expectedOutput)
   })
 
+  it('expand z-trace', () => {
+    const inputHtml = `<html>
+  <body>
+    <p><span z-trace="firstVariable" /></p>
+    <p><span z-trace="secondVariable" /></p>
+  </body>
+    </html>`;
+    console.error = jest.fn();
+    const doc = htmlparser2.parseDocument(inputHtml).children[0];
+    const expander = new Expander(doc, vars);
+    expander.walk();
+    expect(console.error).toHaveBeenCalledWith('firstVariable=firstValue');
+  })
+
 })
