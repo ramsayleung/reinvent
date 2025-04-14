@@ -175,4 +175,32 @@ describe('Expander test', () => {
     expander.walk();
     expect(expander.getResult()).toStrictEqual(expectedHtml);
   })
+
+  it.each([[`---
+name: "Dorothy Johnson Vaughan"
+---
+<html>
+  <body>
+    <p><span z-var="name"/></p>
+  </body>
+</html>`, `<html>
+  <body style="font-size: 200%; margin-left: 0.5em">
+    <p><span>Dorothy Johnson Vaughan</span></p>
+  </body>
+</html>`]])('expect yaml header', (inputHtml, expectedHtml) => {
+    const result = expandWithHeader(inputHtml);
+    expect(result).toStrictEqual(expectedHtml);
+  })
+
+  it.each([[`<div z-index="i" z-limit="5">
+  Iteration: <span z-var="i"/><br/>
+  </div>`, `<div>
+  Iteration: <span>0</span>
+  Iteration: <span>1</span>
+  Iteration: <span>2</span>
+  Iteration: <span>3</span>
+  Iteration: <span>4</span></div>`]])('expect iteration', (inputHtml, expectedHtml) => {
+    const result = expandWithHeader(inputHtml);
+    expect(result).toStrictEqual(expectedHtml);
+  })
 })
