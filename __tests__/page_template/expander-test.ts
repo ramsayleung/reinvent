@@ -116,4 +116,36 @@ describe('Expander test', () => {
     expect(console.error).toHaveBeenCalledWith('firstVariable=firstValue');
   })
 
+  it.each([[`<html>
+  <body>
+    <p><span z-var="variableName"/></p>
+    <div z-include="../__tests__/page_template/simple.html"></div>
+  </body>
+  </html>`, `<html>
+  <body style="font-size: 200%; margin-left: 0.5em">
+    <p><span>variableValue</span></p>
+    <div>
+  <p>First</p>
+  <p>Second</p>
+</div>
+  </body>
+  </html>`], [`<html>
+  <body>
+    <p><span z-var="variableName"/></p>
+    <div z-include="../__tests__/page_template/include-var.html"></div>
+  </body>
+  </html>`, `<html>
+  <body style="font-size: 200%; margin-left: 0.5em">
+    <p><span>variableValue</span></p>
+    <div>
+  <p>First</p>
+  <p><span>firstValue</span></p>
+</div>
+  </body>
+  </html>`]])('expand z-include %s %s', (inputHtml, expectedHtml) => {
+    const doc = htmlparser2.parseDocument(inputHtml).children[0];
+    const expander = new Expander(doc, vars);
+    expander.walk();
+    expect(expander.getResult()).toStrictEqual(expectedHtml);
+  })
 })

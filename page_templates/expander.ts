@@ -10,6 +10,7 @@ import { NumHandler } from "./z-num";
 import { VarHandler } from "./z-var";
 import { TraceHandler } from "./z-trace";
 import { LiteralHandler } from "./z-literal";
+import { IncludeHandler } from "./z-include";
 
 export enum HandlerType {
   If = 'z-if',
@@ -18,6 +19,7 @@ export enum HandlerType {
   Var = 'z-var',
   Trace = 'z-trace',
   Literal = 'z-literal',
+  Include = 'z-include',
 }
 
 const HANDLERS: Record<HandlerType, NodeHandler> = {
@@ -27,6 +29,7 @@ const HANDLERS: Record<HandlerType, NodeHandler> = {
   [HandlerType.Var]: new VarHandler(),
   [HandlerType.Trace]: new TraceHandler(),
   [HandlerType.Literal]: new LiteralHandler(),
+  [HandlerType.Include]: new IncludeHandler(),
 }
 
 export class Expander extends Visitor {
