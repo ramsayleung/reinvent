@@ -148,4 +148,31 @@ describe('Expander test', () => {
     expander.walk();
     expect(expander.getResult()).toStrictEqual(expectedHtml);
   })
+
+  it.each([[`<html>
+  <body>
+    <p>Expect three items</p>
+    <div z-snippet="prefix"><strong>Important:</strong></div>
+    <ul z-loop="item:names">
+  <li><span z-var="prefix"></span><span z-var="item"></span></li>
+    </ul>
+  </body>
+</html>`, `<html>
+  <body style="font-size: 200%; margin-left: 0.5em">
+    <p>Expect three items</p>
+    
+    <ul>
+  <li><span><strong>Important:</strong></span><span>Johnson</span></li>
+    
+  <li><span><strong>Important:</strong></span><span>Vaughan</span></li>
+    
+  <li><span><strong>Important:</strong></span><span>Jackson</span></li>
+    </ul>
+  </body>
+</html>`]])('expand HTML snippets', (inputHtml, expectedHtml) => {
+    const doc = htmlparser2.parseDocument(inputHtml).children[0];
+    const expander = new Expander(doc, vars);
+    expander.walk();
+    expect(expander.getResult()).toStrictEqual(expectedHtml);
+  })
 })
