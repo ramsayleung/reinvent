@@ -10,12 +10,12 @@
 #+HUGO_AUTO_SET_LASTMOD: t
 #+HUGO_DRAFT: false
 #+DATE: [2025-04-14 Mon 22:59]
-#+TITLE: 重新造轮子系列(五)：正则表达式引擎
+#+TITLE: 重新造轮子系列(五)：模板引擎
 #+HUGO_TAGS: reinvent
 #+HUGO_CATEGORIES: "ReInvent: 重新造轮子系列"
 项目 GitHub 地址: [[https://github.com/ramsayleung/reinvent/tree/master/page_templates][Page Template]]
 * 前言
-  在现代网站开发里，内容与表现的分享已经成为基本准则(Separation of content and presentation),
+  在现代网站开发里，内容与表现的分离已经成为基本准则(Separation of content and presentation),
   比如 HTML 就是负责内容展现，而 CSS 就是负责页面的样式。
 
   而手动更新和编写 HTML 也是一件费时费力并且容易出错的工作，尤其是需要同时修改多个页面的时候，
@@ -23,7 +23,8 @@
 
   事实上，互联网上的大多数页面都是通过某种形式的静态网页生成器生成出来的。
 
-  而静态网页生成器的核心就是「模板引擎」，在过去三十年，诞生过无数的模板引擎，甚至有位加拿大的程序员为了更方便记录谁访问了他的简历，他还发明了一门编程语言来做模板引擎的活，这就是「世界上最好的编程语言：PHP」。
+  而静态网页生成器的核心就是「模板引擎」，在过去三十年，诞生过无数的模板引擎，
+  甚至有位加拿大的程序员为了更方便记录谁访问了他的简历，他还发明了一门编程语言来做模板引擎的活，这就是「世界上最好的编程语言：PHP」。
 
   PHP 可以算是web时代的王者之一，凭借着 =LAMP(Linux, Apache, MySql, PHP)= 架构不断开疆扩土，攻城掠地，而PHP本身也不断有新的框架被造出来，为谁是最好的「模板引擎」打得头破血流。
 
@@ -37,10 +38,10 @@
      <% } %>
    #+end_src
 
-   其优点就是可以直接使用嵌入的编程语言，功能强大，学习成本低，缺点就是模板很容易变成混杂样式和逻辑的「屎山」代码
+   其优点就是可以直接使用嵌入的编程语言，功能强大，学习成本低，缺点就是模板很容易变成混杂内容和逻辑的「屎山」代码
 ** 自定义语法
    不嵌入现成的编程语言，而是自己开发一套 mini 编程语言，或者叫 DSL(domain specifc language), 代表有 [[https://pages.github.com/][GitHub Page]] 用到的 [[https://jekyllrb.com/][Jekyll]], 还有 Golang 开发的著名静态网页生成器 [[https://gohugo.io/][Hugo]], 都是使用自定义的语法：
-   #+begin_src ruby
+   #+begin_src golang
      {% comment %} 自创模板语法 {% endcomment %}
      {% for post in posts %}
        {{ post.title | truncate: 30 }}
@@ -59,10 +60,10 @@
      </div>
    #+end_src
 
-   优点是保持HTML的合法性与简洁，不需要额外的 parser, 缺点就是指令功能受限，不如内嵌编程语言强大，生态工具较少。
+   优点是保持HTML的合法性与简洁，不需要额外的 parser, 缺点就是指令功能受限，不如内嵌编程语言强大，生态工具较少, 灵活性差。
 
-   这次的模板引擎我们就会以这个流派为范式进行开发。
-** PHP
+   本文的模板引擎就会以这个流派为范式进行开发。
+** 特例之PHP
    分析完三种流派，就会奇怪 PHP 究竟是属于哪个流派呢？
 
    #+begin_src php
@@ -77,8 +78,73 @@
    其实 PHP 本质就是流派二，只是这门专门用于「模板引擎」的 mini 语言，最后演化成了一门专门的编程语言，只是这个编程语言最擅长的还是网页开发，即是做「模板引擎」。
 
    所以 PHP 是从流派二演化成流派一。
+* 目标
+  可能不是所有的朋友都了解 Vue，所以在设计我们的模板引擎之前，先来明确一下需求与目标(scope).
+
+  假设我们有如下的 JSON 数据:
+  #+begin_src js
+    {
+        names: ['Johnson', 'Vaughan', 'Jackson']
+    }
+  #+end_src
+
+  如果有如下的模板:
+  #+begin_src html
+    <html>
+      <body>
+        <p>Expect three items</p>
+        <ul z-loop="item:names">
+          <li><span z-var="item"/></li>
+        </ul>
+      </body>
+    </html>
+  #+end_src
+
+  那么 =names= 就会被赋值给 =item=, 然后每一个变量都会被展开成 =<span>{item}</span>=, 所以上面的模板就会被展开成:
+  #+begin_src html
+    <html>
+      <body>
+        <p>Expect three items</p>
+        <ul>
+          <li><span>Johnson</span></li>
+          <li><span>Vaughan</span></li>
+          <li><span>Jackson</span></li>
+        </ul>
+      </body>
+    </html>
+  #+end_src
+
+  而不同的指令会有不同的效果，如上的 =z-loop= 就是遍历一个数组，而 =z-if= 就是判断一个变量是否为 =true=, 为 =true= 则输出，否则则不输出.
+
+  如有数据:
+  #+begin_src js
+    {
+        "showThis": true,
+        "doNotShowThis": false
+    }
+  #+end_src
+
+  和模板:
+  #+begin_src html
+    <html>
+      <body>
+        <p z-if="showThis">This should be shown.</p>
+        <p z-if="doNotShowThis">This should <em>not</em> be shown.</p>
+      </body>
+    </html>
+  #+end_src
+
+  就会被渲染成:
+  #+begin_src html
+    <html>
+      <body>
+        <p>This should be shown.</p>
+      </body>
+    </html>
+  #+end_src
+
+  本文支持的指令集可见下文.
 * 设计思路
-  TODO
-* stack frame
-* vistor pattern
-* 指令集
+** stack frame
+** vistor pattern
+* 支持的指令集
