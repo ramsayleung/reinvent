@@ -143,7 +143,12 @@
     </html>
   #+end_src
 
-  本文支持的指令集可见下文.
+  我们可以先支持以下的指令集:
+  | 指令集  | 含义                                             |
+  | =z-loop= | 遍历一个数组的数据，每个数据元素对应一个 HTML 元素 |
+  | =z-if= | 在变量为 =True= 时显示 HTML 元素                 |
+  | =z-var= | 将变量替换成对应的值，并显示在 HTML 元素上        |
+  | =z-num= | 将数字显示在对应的 HTML 元素上                    |
 * 设计思路
 ** stack frame
    模板引擎的核心是将「数据」+「模板」渲染成页面，那么数据要如何保存呢？以什么数据结构和变量形式来处理呢？
@@ -211,8 +216,345 @@
    
   因此我们的模板引擎也会使用动态作用域来保存变量，即 =List<HashMap<String, String>>= 的数据结构.
 ** vistor pattern
+   确定好如何保存变量之后，下一个问题就是如何遍历并且生成模板。
+
+   解析HTML之后生成的是 DOM(Document Object Model) 结构, 本质是多叉树遍历，按照指令处理栈的变量，然后再把 HTML 输出, 如下:
+   #+begin_src javascript
+     function traverse(node) {
+       if (node.type === 'text') console.log(node.data);
+       else {
+         console.log(`<${node.name}>`); 
+         node.children.forEach(traverse);
+         console.log(`</${node.name}>`);
+       }
+     }
+   #+end_src
+
+   实现是很简单，但是我们把「遍历逻辑」和「不同指令对应的逻辑」耦合在一起了，很难维护。
+
+   并且我们现在只支持4个指令，或者未来要增加其他指令，只要在 =traverse= 里面再增加 if-else 逻辑，基本没有扩展性。
+
+   所以我们需要优化的点就是，把「遍历逻辑」和「指令逻辑」分开，这样就易于我们扩展新指令。
+
+   要解耦，想想有啥设计模式合适，遍寻23种设计模式，[[https://refactoring.guru/design-patterns/visitor][访问者(Vistor)模式 ]]就很合适用来做解耦遍历逻辑和指令逻辑.
+
+   [[file:../img/reinvent_vistor_pattern.jpg]]
+
+   不了解 Vistor 模式的同学可以先看下这篇[[https://refactoring.guru/design-patterns/visitor][文章]], 而Rust 非常著名的序列化框架 [[https://serde.rs][Serde]] 就通过 [[https://serde.rs/impl-deserialize.html][Vistor]] 模式可以让用户自定义如何序列化或反序列化某种类型的数据。
 ** 接口设计
+   既然选定了 =Vistor= 模式，那么就让我们来设计具体的接口。
+
+   =Vistor= 接口类，接受某个 DOM 元素作为根节点，然后通过 =walk= 函数遍历给定的节点，或者节点为空则遍历根节点:
+
+   #+begin_src js
+     import { Node, NodeWithChildren } from "domhandler"
+     export abstract class Visitor {
+       private root: Node;
+       constructor(root: Node) {
+         this.root = root;
+       }
+
+       walk(node: Node = null) {
+         if (node === null) {
+           node = this.root
+         }
+
+         if (this.open(node)) {
+           node.children.forEach(child => {
+             this.walk(child)
+         });
+         }
+         this.close(node);
+       }
+
+       // handler to be called when first arrive at a node
+       abstract open(node: Node): boolean;
+
+       // handler to be called when finished with a node
+       abstract close(node: Node): void;
+     }
+   #+end_src
+   其中的 =open= 函数用于在进入一个节点时被调用，相当于是在前序位置被调用，返回值来表现是否需要遍历其子节点；而 =close= 函数在离开一个节点前，即相当于后序位置被调用。
+
+   关于二叉树的前序位置和后序位置，可见这篇讲解二叉树算法的[[https://labuladong.online/algo/essential-technique/binary-tree-summary/#%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E9%87%8D%E8%A6%81%E6%80%A7][文章]]
+
+   =Vistor= 算法里面的关键即是实现「遍历逻辑」与「每个节点处理逻辑」的解耦，遍历逻辑我们已经实现在 =Vistor= 基类了，现在就需要实现一个具体的子类来表示节点的处理逻辑:
+
+   #+begin_src js
+     export enum HandlerType {
+       If = 'z-if',
+       Loop = 'z-loop',
+       Num = 'z-num',
+       Var = 'z-var',
+     }
+
+     const HANDLERS: Record<HandlerType, NodeHandler> = {
+       [HandlerType.If]: new IfHandler(),
+       [HandlerType.Loop]: new LoopHandler(),
+       [HandlerType.Num]: new NumHandler(),
+       [HandlerType.Var]: new VarHandler(),
+     }
+
+     export class Expander extends Visitor {
+       public env: Env;
+       private handlers: Record<HandlerType, NodeHandler>
+       private result: string[]
+       constructor(root: Node, vars: Object) {
+         super(root);
+         this.env = new Env(vars);
+         this.handlers = HANDLERS;
+         this.result = [];
+       }
+
+       open(node: Node): boolean {
+         if (node.type === 'text') {
+           const textNode = node as Text;
+           this.output(textNode.data);
+           return false;
+         } else if (this.hasHandler(node as Element)) {
+           return this.getHandler(node as Element).open(this, node);
+         } else {
+           this.showTag(node as Element, false);
+           return true;
+         }
+       }
+
+       close(node: Node): boolean {
+         if (node.type === 'text') {
+           return;
+         }
+         if (node.type === 'tag' && this.hasHandler(node as Element)) {
+           this.getHandler(node as Element).close(this, node);
+         } else {
+           this.showTag(node as Element, true);
+         }
+       }
+
+       // 判断是否有 z-* 属性对应的指令处理器
+       hasHandler(node: Element): boolean {
+         for (const name in node.attribs) {
+           if (name in this.handlers) {
+             return true;
+           }
+         }
+         return false;
+       }
+
+       getHandler(node: Element) {
+         const possible = Object.keys(node.attribs)
+           .filter(name => name in this.handlers)
+         assert(possible.length === 1, 'Should be exactly one handler');
+         return this.handlers[possible[0]];
+       }
+
+       // 将 tag 标签及属性输出到 output 去，但排除 `z-` 开头的指令
+       showTag(node: Element, closing: boolean) {}
+
+       output(text: string) {
+         this.result.push((text === undefined) ? 'UNDEF' : text);
+       }
+   #+end_src
+
+   =Expander= 的逻辑也并不复杂，每次遍历到一个 =DOM= 元素的时候，通过元素类似执行对应的操作，如果是 =z-= 开头的指令，就看下能否找到对应指令的处理器:
+
+   #+begin_src plantuml :file ../img/reinvent_expander_design.png :exports results
+     @startuml Expander_Activity_Diagram
+
+     start
+     :Expander.walk(root);
+     repeat
+       :open(node);
+       if (node.type == text) then (yes)
+         :output(text.data);
+         :return false;
+       else if (hasHandler(node)) then (yes)
+         :handler.open(Expander, node);
+         if (handler returns true) then (yes)
+           :process children;
+         else (no)
+           :skip children;
+         endif
+       else (regular HTML)
+         :showTag(node, false);
+         :return true;
+       endif
+
+       while (has children?) is (yes)
+         :walk(child);
+       endwhile
+
+       :close(node);
+       if (node has handler) then (yes)
+         :handler.close(Expander, node);
+       else (no)
+         :showTag(node, true);
+       endif
+     repeat while (more nodes?)
+
+     :getResult();
+     stop
+
+     @enduml
+   #+end_src
+
+   仔细观察代码会发现，不同的指令对应的处理器实现了 =NodeHandler= 接口，定义在前序位置和后序位置处理节点的逻辑，并按指令名保存在 =HANDLER= 中：
+   #+begin_src js
+     export interface NodeHandler {
+       open(expander: Expander, node: Element): boolean;
+       close(expander: Expander, node: Element): void;
+     }
+   #+end_src
+   这就意味着，如果需要增加一个新的指令，该指令处理器只需要实现 =NodeHandler= 接口，并添加到 =HANDLER= 即可，不需要改动其他的已有代码，我们就实现了「遍历逻辑」与「指令逻辑」的解耦。
 * 实现
 ** 支持的指令集
+   不同的指令集的差别只是如何实现 =open= 和 =close= 逻辑，我就不一一赘述了，已支持的指令集及实现列表如下：
+
+   | 指令           | 实现            |
+   | =z-if=        | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-if.ts][z-if.ts]]        |
+   | =z-include=   | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-include.ts][z-include.ts]]   |
+   | =z-iteration= | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-iteration.ts][z-iteration.ts]] |
+   | =z-literal=   | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-literal.ts][z-literal.ts]]   |
+   | =z-loop=      | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-loop.ts][z-loop.ts]]      |
+   | =z-num=       | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-num.ts][z-num.ts]]       |
+   | =z-snippet=   | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-snippet.ts][z-snippet.ts]]   |
+   | =z-trace=     | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-trace.ts][z-trace.ts]]     |
+   | =z-var=       | [[https://github.com/ramsayleung/reinvent/blob/master/page_templates/z-var.ts][z-var.ts]]       |
 ** 示例
-  [[file:../reinvent_project.org][回到本系列的目录]]
+   假设有数据如下:
+   #+begin_src js
+     const vars = {
+         "firstVariable": "firstValue",
+         "secondVariable": "secondValue",
+         "variableName": "variableValue",
+         "showThis": true,
+         "doNotShowThis": false,
+         "names": ["Johnson", "Vaughan", "Jackson"]
+     };
+   #+end_src
+*** z-num
+    #+begin_src html
+      <html>
+        <body>
+          <p><span z-num="123"/></p>
+        </body>
+      </html>
+    #+end_src
+
+    模板展开如下：
+    #+begin_src html
+      <html>
+        <body>
+          <p><span>123</span></p>
+        </body>
+      </html>
+    #+end_src
+*** z-var
+    #+begin_src html
+      <html>
+        <body>
+          <p><span z-var="variableName"/></p>
+        </body>
+      </html>
+    #+end_src
+
+    模板展开如下：
+    #+begin_src html
+      <html>
+        <body>
+          <p><span>variableValue</span></p>
+        </body>
+      </html>
+    #+end_src
+*** z-if
+    #+begin_src html
+      <html>
+        <body>
+          <p z-if="showThis">This should be shown.</p>
+          <p z-if="doNotShowThis">This should <em>not</em> be shown.</p>
+        </body>
+      </html>
+    #+end_src
+
+    模板展开如下：
+    #+begin_src html
+      <html>
+        <body>
+          <p>This should be shown.</p>
+    
+        </body>
+      </html>
+    #+end_src
+*** z-loop
+    #+begin_src html
+      <html>
+        <body>
+          <p>Expect three items</p>
+          <ul z-loop="item:names">
+            <li><span z-var="item"/></li>
+          </ul>
+        </body>
+      </html>
+    #+end_src
+
+    模板展开如下：
+    #+begin_src html
+      <html>
+        <body>
+          <p>Expect three items</p>
+          <ul>
+            <li><span>Johnson</span></li>
+    
+            <li><span>Vaughan</span></li>
+    
+            <li><span>Jackson</span></li>
+          </ul>
+        </body>
+      </html>
+    #+end_src
+*** z-include
+    #+begin_src html
+      <html>
+        <body>
+          <p><span z-var="variableName"/></p>
+          <div z-include="simple.html"></div>
+        </body>
+      </html>
+    #+end_src
+
+    =simple.html= :
+    #+begin_src html
+      <div>
+        <p>First</p>
+        <p>Second</p>
+      </div>
+    #+end_src
+
+    模板展开如下：
+    
+    #+begin_src html
+      <html>
+        <body>
+          <p><span>variableValue</span></p>
+          <div>
+        <p>First</p>
+        <p>Second</p>
+      </div>
+        </body>
+        </html>
+    #+end_src
+
+    更多的[[https://github.com/ramsayleung/reinvent/blob/master/__tests__/page_template/expander-test.ts][示例可见]]
+* 总结
+模板引擎的本质，是帮我们把重复的页面结构抽出来，只填变化的内容。这是程序员对「Don't Repeat Yourself」原则最直观的践行。
+
+三十年来，开发者们创造了无数种实现方案，但核心思路始终围绕着前文提到的三种基本模式。
+
+如今即便在最流行的 Vue 或 React 框架中，当你写下JSX或是 =v-*= 指令时，背后的思路仍万变不离其宗，本质上仍在沿用模板引擎的思想。
+
+而这种「结构复用，数据驱动」的理念，也早已成为Web开发的根基。
+
+[[file:../reinvent_project.org][回到本系列的目录]]
+* 参考
+  - https://refactoring.guru/design-patterns/visitor
+  - https://serde.rs/impl-deserialize.html
+  - https://third-bit.com/sdxjs/page-templates/
