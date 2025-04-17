@@ -17,7 +17,7 @@ describe('Expander test', () => {
     <p><span z-num="123"/></p>
   </body>
 </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>123</span></p>
   </body>
 </html>`], [
@@ -27,7 +27,7 @@ describe('Expander test', () => {
   </body>
   </html>`,
       `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>variableValue</span></p>
   </body>
   </html>`
@@ -39,7 +39,7 @@ describe('Expander test', () => {
   </body>
   </html>`,
       `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>firstValue</span></p>
     <p><span>secondValue</span></p>
   </body>
@@ -52,7 +52,7 @@ describe('Expander test', () => {
   </body>
 </html>`,
       `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p>This should be shown.</p>
     
   </body>
@@ -66,7 +66,7 @@ describe('Expander test', () => {
     </ul>
   </body>
 </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p>Expect three items</p>
     <ul>
       <li><span>Johnson</span></li>
@@ -87,7 +87,7 @@ describe('Expander test', () => {
   </body>
   </html>`,
       `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <div>
       
       <span z-var="variableName"></span>
@@ -122,7 +122,7 @@ describe('Expander test', () => {
     <div z-include="../__tests__/page_template/simple.html"></div>
   </body>
   </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>variableValue</span></p>
     <div>
   <p>First</p>
@@ -135,7 +135,7 @@ describe('Expander test', () => {
     <div z-include="../__tests__/page_template/include-var.html"></div>
   </body>
   </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>variableValue</span></p>
     <div>
   <p>First</p>
@@ -158,7 +158,7 @@ describe('Expander test', () => {
     </ul>
   </body>
 </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p>Expect three items</p>
     
     <ul>
@@ -184,7 +184,7 @@ name: "Dorothy Johnson Vaughan"
     <p><span z-var="name"/></p>
   </body>
 </html>`, `<html>
-  <body style="font-size: 200%; margin-left: 0.5em">
+  <body>
     <p><span>Dorothy Johnson Vaughan</span></p>
   </body>
 </html>`]])('expect yaml header', (inputHtml, expectedHtml) => {

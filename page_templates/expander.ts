@@ -62,7 +62,7 @@ export class Expander extends Visitor {
     }
   }
 
-  close(node: Node): boolean {
+  close(node: Node): void {
     if (node.type === 'text') {
       return;
     }
@@ -95,13 +95,9 @@ export class Expander extends Visitor {
       return;
     }
     this.output(`<${node.name}`);
-    if (node.name === 'body') {
-      this.output(' style="font-size: 200%; margin-left: 0.5em"');
-    } else {
-      for (const name in node.attribs) {
-        if (!name.startsWith('z-')) {
-          this.output(` ${name}="${node.attribs[name]}"`);
-        }
+    for (const name in node.attribs) {
+      if (!name.startsWith('z-')) {
+        this.output(` ${name}="${node.attribs[name]}"`);
       }
     }
     this.output('>');

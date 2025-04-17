@@ -24,5 +24,5 @@ export abstract class Visitor {
   abstract open(node: Node): boolean;
 
   // handler to be called when finished with a node
-  abstract close(node: Node): boolean;
+  abstract close(node: Node): void;
 }
