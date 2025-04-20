@@ -1,4 +1,6 @@
 import UpdateOnTimestamps from "./update_stamps";
+import { IGraphProcessor } from "./interface";
+import { Graph } from "@dagrejs/graphlib";
 
 export default class VariableExpander extends UpdateOnTimestamps {
   buildGraph(): void {

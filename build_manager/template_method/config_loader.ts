@@ -16,3 +16,4 @@ export abstract class ConfigLoader extends SkeletonBuilder {
     this.config = parse(fileContents) as Rule[];
   }
 }
+
