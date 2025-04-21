@@ -1,0 +1,11 @@
+- target: hello
+  depends:
+  - src/utils.c
+  - src/utils.h
+  - src/main.c
+  recipes:
+  - "gcc src/main.c src/utils.c -o hello"
+- target: clean
+  depends: []
+  recipes:
+  - "rm -rf hello"
