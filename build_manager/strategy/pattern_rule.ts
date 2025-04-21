@@ -47,7 +47,7 @@ export class PatternRuleExpander implements IGraphBuilder {
 
       // Skip nodes that already have recipes
       const data = graph.node(target) as NodeData;
-      if (data.recipes.length > 0) {
+      if (data && data.recipes.length > 0) {
         return;
       }
 
