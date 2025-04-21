@@ -38,4 +38,5 @@
   3. [[file:html_selector/reinvent_selector.org][HTML Selector]]
   4. [[file:regular_expression/reinvent_regex.org][正则表达式引擎]]
   5. [[file:page_templates/reinvent_page_template.org][模板引擎]]
+  6. [[file:build_manager/reinvent_build_manager.org][构建工具]]
  
