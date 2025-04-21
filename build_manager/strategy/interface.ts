@@ -9,7 +9,7 @@ export interface BuildRule {
 export type RuleData = Pick<BuildRule, 'recipes' | 'depends'>;
 
 export interface IGraphProcessor {
-  process(graph: Graph): void;
+  process(graph: Graph): Promise<void>;
 }
 
 export interface IConfigLoader {
@@ -22,5 +22,9 @@ export interface IGraphBuilder {
 }
 
 export interface IRunner {
-  execute(graph: Graph): void;
+  execute(graph: Graph): Promise<void>;
+}
+
+export interface IStaleStrategy {
+  isStale(node: string, graph: Graph): boolean;
 }

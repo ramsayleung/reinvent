@@ -4,7 +4,7 @@ import assert from "assert";
 
 // Check for cycles
 export class CycleChecker implements IGraphProcessor {
-  process(graph: graphlib.Graph): void {
+  async process(graph: graphlib.Graph): Promise<void> {
     const cycles = graphlib.alg.findCycles(graph);
     assert.strictEqual(cycles.length, 0, `Dependency graph contains cycles ${cycles}`);
   }

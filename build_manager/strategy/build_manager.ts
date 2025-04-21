@@ -8,13 +8,13 @@ export class BuildManager {
     private runner: IRunner
   ) {}
 
-  build() {
+  async build() {
     const config = this.configLoader.load();
     const [graph, rules] = this.graphBuilder.buildGraph(config);
     this.graphBuilder.expandRules(graph, rules);
 
     for (const processor of this.processors) {
-      processor.process(graph);
+      await processor.process(graph);
     }
 
     this.runner.execute(graph);
