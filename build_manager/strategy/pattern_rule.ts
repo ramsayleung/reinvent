@@ -70,7 +70,7 @@ export class PatternRuleExpander implements IGraphBuilder {
       .forEach(dep => graph.setEdge(dep, target));
 
     const recipes = rule.recipes.map(act => act.replace('%', basename));
-    const timestamp = (graph.node(target) as NodeData).timestamp;
+    const timestamp = (graph.node(target) as NodeData)?.timestamp;
     graph.setNode(target, {
       recipes: recipes,
       timestamp: timestamp

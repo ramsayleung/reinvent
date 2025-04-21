@@ -1,8 +1,8 @@
 import { BuildManager } from "./build_manager";
-import { YamlConfigLoader } from "./config_loader";
+import { YamlConfigLoader } from "./yaml_config_loader"
 import { CycleChecker } from "./cycle_checker";
 import { PatternRuleExpander } from "./pattern_rule";
-import { PatternDisplayOnly } from "./pattern_user_show";
+import { PatternDisplayOnly } from "./pattern_display_only"
 import { VariableExpandProcessor } from "./variable_expander";
 
 const main = async () => {
