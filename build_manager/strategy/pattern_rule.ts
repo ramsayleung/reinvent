@@ -1,22 +1,19 @@
 import { Graph } from "@dagrejs/graphlib";
-import { BuildRule, IGraphBuilder, IGraphProcessor } from "./interface";
+import { BuildRule, IGraphBuilder, RuleData } from "./interface";
 import graphlib from '@dagrejs/graphlib';
 import assert from 'assert';
 
-interface Node {
-  recipes: string[]
-  timestamp: number;
-}
+type NodeData = Pick<BuildRule, 'recipes' | 'timestamp'>
 
 // Handle % pattern rules
 export class PatternRuleExpander implements IGraphBuilder {
-  buildGraph(config: BuildRule[]): [Graph, Map<string, any>] {
+  buildGraph(config: BuildRule[]): [Graph, Map<string, RuleData>] {
     const graph = new graphlib.Graph();
     const rules = new Map();
 
     config.forEach(rule => {
       if (rule.target.includes('%')) {
-        const data = {
+        const data: RuleData = {
           recipes: rule.recipes,
           depends: rule.depends
         };
@@ -26,7 +23,7 @@ export class PatternRuleExpander implements IGraphBuilder {
         graph.setNode(rule.target, {
           recipes: rule.recipes,
           timestamp: timestamp
-        } as Node);
+        } as NodeData);
 
         rule.depends.forEach(dep => {
           assert(!dep.includes('%'), 'Cannot have "%" in a non-pattern rule');
@@ -38,16 +35,18 @@ export class PatternRuleExpander implements IGraphBuilder {
     return [graph, rules];
   }
 
-  expandRules(graph: Graph, rules: Map<string, any>): void {
+  expandRules(graph: Graph, rules: Map<string, RuleData>): void {
     graph.nodes().forEach(target => {
-      // Skip if target has dependencies
+      // Skip nodes that already have dependencies
+      // Nodes with predecessors are already "complete"
+      // they have explicit rules or were expanded previously
       const predecessors = graph.predecessors(target);
       if (predecessors && predecessors.length > 0) {
         return;
       }
 
-      // Skip if target has recipes
-      const data = graph.node(target) as Node;
+      // Skip nodes that already have recipes
+      const data = graph.node(target) as NodeData;
       if (data.recipes.length > 0) {
         return;
       }
@@ -60,21 +59,21 @@ export class PatternRuleExpander implements IGraphBuilder {
     })
   }
 
-  findRule(target: string, rules: Map<string, any>): any {
+  findRule(target: string, rules: Map<string, RuleData>): RuleData {
     const pattern = `%.${target.split('.')[1]}`;
     return rules.has(pattern) ? rules.get(pattern) : null;
   }
 
-  expandRule(target: string, rule: BuildRule, graph: Graph): void {
+  expandRule(target: string, rule: RuleData, graph: Graph): void {
     const basename = target.split('.')[0];
     rule.depends.map(dep => dep.replace('%', basename))
       .forEach(dep => graph.setEdge(dep, target));
 
     const recipes = rule.recipes.map(act => act.replace('%', basename));
-    const timestamp = (graph.node(target) as Node).timestamp;
+    const timestamp = (graph.node(target) as NodeData).timestamp;
     graph.setNode(target, {
       recipes: recipes,
       timestamp: timestamp
-    } as Node);
+    } as NodeData);
   }
 }

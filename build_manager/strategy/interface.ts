@@ -6,6 +6,8 @@ export interface BuildRule {
   timestamp?: number;
 }
 
+export type RuleData = Pick<BuildRule, 'recipes' | 'depends'>;
+
 export interface IGraphProcessor {
   process(graph: Graph): void;
 }
@@ -15,8 +17,8 @@ export interface IConfigLoader {
 }
 
 export interface IGraphBuilder {
-  buildGraph(config: BuildRule[]): [Graph, Map<string, any>];
-  expandRules(graph: Graph, rules: Map<string, any>): void;
+  buildGraph(config: BuildRule[]): [Graph, Map<string, RuleData>];
+  expandRules(graph: Graph, rules: Map<string, RuleData>): void;
 }
 
 export interface IRunner {

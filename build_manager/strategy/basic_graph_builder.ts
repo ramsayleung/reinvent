@@ -1,12 +1,12 @@
 import graphlib from "@dagrejs/graphlib";
-import { BuildRule, IGraphBuilder } from "./interface";
+import { BuildRule, IGraphBuilder, RuleData } from "./interface";
 
 export class BasicGraphBuilder implements IGraphBuilder {
-  expandRules(graph: graphlib.Graph, rules: Map<string, any>): void {
+  expandRules(graph: graphlib.Graph, rules: Map<string, RuleData>): void {
     // not need to expand
   }
 
-  buildGraph(config: BuildRule[]): [graphlib.Graph, Map<string, any>] {
+  buildGraph(config: BuildRule[]): [graphlib.Graph, Map<string, RuleData>] {
     const graph = new graphlib.Graph();
     config.forEach(rule => {
       graph.setNode(rule.target, {
