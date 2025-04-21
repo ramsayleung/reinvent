@@ -1,5 +1,6 @@
-import { BuildRule } from "../../../build_manager/strategy/interface"
 import { PatternRuleExpander } from "../../../build_manager/strategy/pattern_rule";
+import { BuildRule, RuleData } from "../../../build_manager/strategy/interface"
+import { Graph } from "@dagrejs/graphlib";
 
 describe('Test Pattern Rule expander', () => {
   test('test buildGraph success', () => {
@@ -45,19 +46,34 @@ describe('Test Pattern Rule expander', () => {
   })
 
   test('test findRule', () => {
-    const target = "%.out";
     const rules = new Map<string, any>([
-      [target, {
+      ["%.out", {
         depends: ["%.in"],
         recipes: ["update @TARGET from @DEPENDENCIES"]
       }]
     ]);
 
     const expander = new PatternRuleExpander();
+    const target = "right.out";
     const rule = expander.findRule(target, rules);
     expect('depends' in rule).toBe(true);
     expect(rule['depends']).toStrictEqual(["%.in"]);
 
     expect(expander.findRule('%.not_exist', rules)).toBeNull();
+  })
+
+  test('test expandRule', () => {
+    const target = "right.out";
+    const rule: RuleData = {
+      depends: ["%.in"],
+      recipes: ["update %.out from %.in"]
+    };
+    const graph = new Graph();
+    const expander = new PatternRuleExpander();
+    expander.expandRule(target, rule, graph);
+    expect(graph.nodes().length).toBe(2);
+    expect(graph.edges().length).toBe(1);
+    expect(graph.edges()[0].w).toBe("right.out");
+    expect(graph.edges()[0].v).toBe("right.in");
   })
 })
