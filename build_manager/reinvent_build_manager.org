@@ -122,7 +122,7 @@
 
    而策略模式核心思想是组合 + 运行时替换，将算法的每个可变部分抽象为独立策略（接口），通过 **组合** 的方式注入到主类中。
 
-   [[https://third-bit.com/sdxjs/build-manager/][System Design By Example]] 原书使用的是模板方法，其实现可谓是充分展示了继承的不足：紧耦合，新增功能需要创建新子类，导致类爆炸，各种类变量在继承链传递，真的是无法维护，最后甚至「丧心病狂」地实现了七层继承，真的是完美诠释了 [[https://en.wikipedia.org/wiki/Fragile_base_class][Fragile base class]] 的 code smell.
+   [[https://third-bit.com/sdxjs/build-manager/][System Design By Example]] 原书使用的是模板方法，其实现可谓是充分展示了继承的不足：紧耦合，新增功能需要创建新子类，导致类爆炸，各种类变量在继承链传递，真的是无法维护，最后甚至「丧心病狂」地实现了八层继承，真的是完美诠释了 [[https://en.wikipedia.org/wiki/Fragile_base_class][Fragile base class]] 的 code smell.
   #+begin_src plantuml :file ../img/reinvent_template_method_inheritance_chain.png :exports results
     @startuml BuildSystemClassDiagram
 
@@ -317,17 +317,11 @@
   #+end_src
   
   #+begin_src sh
-    > npx tsx driver.ts build_c_app.yml # 把所有「过期」目标都执行一次
+    > npx tsx driver.ts build_c_app.yml # 未指定目标，构建第一个目标，对齐 make 
     gcc src/main.c src/utils.c -o hello
-
-    gcc src/utils.c src/main.c -o varexpand_hello
-
-    rm -rf hello
-
-    rm -rf varexpand_hello
 
     > npx tsx driver.ts build_c_app.yml hello # 生成 hello 
-    gcc src/main.c src/utils.c -o hello
+    target: hello is up to date, skipping execute the recipe
 
     > ./hello
     Message: Hello from Makefile!
@@ -368,7 +362,7 @@
 
   除了核心的依赖管理和增量编译，还实现了自动变量替换（如 =@TARGET=）、通配符规则和策略模式的灵活扩展。
 
-  写到这里总会忍不住地想起Unix的 KISS 原则, 即("Keep it simple, stupid!), **复杂的工具往往由简单的概念组合而成**
+  写到这里总会忍不住地想起Unix的 KISS 原则, 即("Keep it simple, stupid!), *复杂的工具往往由简单的概念组合而成*
 
   [[file:../reinvent_project.org][回到本系列的目录]]
 * 参考
