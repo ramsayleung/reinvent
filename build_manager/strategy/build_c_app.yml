@@ -5,7 +5,17 @@
   - src/main.c
   recipes:
   - "gcc src/main.c src/utils.c -o hello"
+- target: varexpand_hello
+  depends:
+  - src/utils.c
+  - src/main.c
+  recipes:
+  - "gcc @DEPENDENCIES -o @TARGET"
 - target: clean
   depends: []
   recipes:
   - "rm -rf hello"
+- target: cleanvar
+  depends: []
+  recipes:
+  - "rm -rf varexpand_hello"
