@@ -10,11 +10,15 @@ export class ShellRunner implements IRunner {
     let source = sorted;
     if (this.specificTargets?.length > 0) {
       source = sorted.filter(target => this.specificTargets.includes(target))
+    } else {
+      // if not target is specified, run the first target as `make`
+      const filtered = sorted.filter(target => graph.node(target) && 'recipes' in graph.node(target));
+      source = filtered.length > 0 ? [filtered[0]] : [];
     }
 
     for (const target of source) {
-      if (this.staleStrategy.isStale(target, graph)) {
-        if (graph.node(target) && 'recipes' in graph.node(target)) {
+      if (graph.node(target) && 'recipes' in graph.node(target)) {
+        if (this.staleStrategy.isStale(target, graph)) {
           const recipes = graph.node(target).recipes;
           for (const recipe of recipes) {
             try {
@@ -25,9 +29,9 @@ export class ShellRunner implements IRunner {
               console.error('Compilation failed:', error.message);
             }
           }
+        } else {
+          console.log(`target: ${target} is up to date, skipping execute the recipe`)
         }
-      } else {
-        console.log(`target: ${target} is up to date, skipping execute the recipe`)
       }
     }
   }
