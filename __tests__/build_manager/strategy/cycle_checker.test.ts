@@ -3,7 +3,7 @@ import { CycleChecker } from "../../../build_manager/strategy/cycle_checker";
 import { BuildRule } from "../../../build_manager/strategy/interface"
 
 describe('test cycle checker', () => {
-  test('detect cycle in a graph', () => {
+  test('detect cycle in a graph', async () => {
     const config: BuildRule[] = [];
     config.push({
       target: "A",
@@ -16,9 +16,10 @@ describe('test cycle checker', () => {
     const graphBuilder = new BasicGraphBuilder();
     const [graph, rules] = graphBuilder.buildGraph(config);
     const cycleChecker = new CycleChecker();
-    expect(() => cycleChecker.process(graph)).toThrow();
+    await expect(() => cycleChecker.process(graph)).rejects.toThrow();
   })
-  test('detect no cycle in a graph', () => {
+
+  test('detect no cycle in a graph', async () => {
     const config: BuildRule[] = [];
     config.push({
       target: "A",
@@ -31,6 +32,6 @@ describe('test cycle checker', () => {
     const graphBuilder = new BasicGraphBuilder();
     const [graph, rules] = graphBuilder.buildGraph(config);
     const cycleChecker = new CycleChecker();
-    expect(() => cycleChecker.process(graph)).not.toThrow();
+    await expect(cycleChecker.process(graph)).resolves.not.toThrow();
   })
 })
