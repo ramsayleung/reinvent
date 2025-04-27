@@ -3,6 +3,11 @@ export interface Cell {
   getHeight(): number;
 }
 
+export interface Placeable extends Cell {
+  place(x0: number, y0: number): void;
+  report(): any[];
+}
+
 export class Block implements Cell {
   private width: number;
   private height: number;
